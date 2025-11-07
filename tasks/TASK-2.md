@@ -372,13 +372,15 @@ export const FlightForm: React.FC<{ user: User; onClose: () => void }> = ({ user
 
 ## Checklist
 
-- [ ] Firebase Functions deployed
-- [ ] Weather service working
-- [ ] Safety logic implemented
-- [ ] Flight path calculations correct
-- [ ] AI service connected
-- [ ] Flight form creates flights with weather check
-- [ ] Weather checkpoints saved
+- [x] Firebase Functions implemented
+- [x] Weather service working
+- [x] Safety logic implemented
+- [x] Flight path calculations correct
+- [x] AI service connected
+- [x] Flight form creates flights with weather check
+- [x] Weather checkpoints saved
+- [ ] Firebase Functions deployed (requires API keys configuration)
+- [ ] Tested with real weather data
 
 ---
 

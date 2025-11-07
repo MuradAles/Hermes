@@ -15,5 +15,21 @@ export interface WeatherCheckpoint {
   weather: WeatherConditions;
   safetyStatus: 'safe' | 'marginal' | 'dangerous';
   safetyScore: number;
+  reason?: string;
+}
+
+export interface WeatherReport {
+  checkpoints: WeatherCheckpoint[];
+  overallSafety: 'safe' | 'marginal' | 'dangerous';
+  overallScore: number;
+  timestamp: Date;
+}
+
+export interface RescheduleOption {
+  newTime: Date | string;
+  reasoning: string;
+  expectedWeather: string;
+  safetyImprovement: string;
+  confidence: number;
 }
 

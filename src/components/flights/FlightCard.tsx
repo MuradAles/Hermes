@@ -27,7 +27,16 @@ export const FlightCard: React.FC<{
   };
 
   const formatDate = (date: any) => {
-    const d = date instanceof Date ? date : new Date(date);
+    // Handle Firestore Timestamp objects
+    let d: Date;
+    if (date?.toDate) {
+      d = date.toDate(); // Firestore Timestamp
+    } else if (date instanceof Date) {
+      d = date;
+    } else {
+      d = new Date(date);
+    }
+    
     return d.toLocaleDateString('en-US', { 
       month: 'short', 
       day: 'numeric',
@@ -36,7 +45,16 @@ export const FlightCard: React.FC<{
   };
 
   const formatTime = (date: any) => {
-    const d = date instanceof Date ? date : new Date(date);
+    // Handle Firestore Timestamp objects
+    let d: Date;
+    if (date?.toDate) {
+      d = date.toDate(); // Firestore Timestamp
+    } else if (date instanceof Date) {
+      d = date;
+    } else {
+      d = new Date(date);
+    }
+    
     return d.toLocaleTimeString('en-US', { 
       hour: 'numeric', 
       minute: '2-digit',
