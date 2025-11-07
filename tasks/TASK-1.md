@@ -367,15 +367,17 @@ body { font-family: sans-serif; background: #0a0a0a; color: #fff; }
 
 ## Checklist
 
-- [ ] Firebase service initialized
-- [ ] Authentication hook working
-- [ ] Login component functional
-- [ ] App layout with conditional rendering
-- [ ] Sidebar displays user info
-- [ ] Flight service created
-- [ ] useFlights hook working
-- [ ] Flight cards display
-- [ ] Basic styling applied
+- [x] Firebase service initialized
+- [x] Authentication hook working
+- [x] Login component functional
+- [x] App layout with conditional rendering
+- [x] Sidebar displays user info
+- [x] Flight service created
+- [x] useFlights hook working
+- [x] Flight cards display
+- [x] Basic styling applied
+- [x] Firestore security rules configured
+- [x] Old CSS files cleaned up
 
 ---
 

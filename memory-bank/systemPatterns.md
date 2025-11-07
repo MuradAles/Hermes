@@ -91,17 +91,22 @@ App.tsx
 ```
 src/
 ├── components/
-│   ├── ui/              # Reusable UI components
-│   ├── auth/            # Authentication components
-│   ├── flights/          # Flight-related components
-│   ├── weather/         # Weather-related components
-│   ├── map/             # 3D map components
-│   └── layout/          # Layout components
-├── services/            # API and business logic
-├── hooks/               # Custom React hooks
-├── types/               # TypeScript type definitions
-├── utils/               # Helper functions
-└── styles/              # CSS files
+│   ├── ui/              # Reusable UI components (to be created)
+│   ├── auth/            # Authentication components (to be created)
+│   ├── flights/         # Flight-related components (to be created)
+│   ├── weather/         # Weather-related components (to be created)
+│   ├── map/             # 3D map components (to be created)
+│   └── layout/          # Layout components (to be created)
+├── services/            # API and business logic (to be created)
+├── hooks/               # Custom React hooks (to be created)
+├── types/               # TypeScript type definitions ✅
+│   ├── User.ts          # User interface and training levels
+│   ├── Flight.ts         # Flight, FlightPath, Waypoint interfaces
+│   ├── Weather.ts        # WeatherConditions, WeatherCheckpoint
+│   ├── Airport.ts        # Location interface
+│   └── index.ts          # Re-exports all types
+├── utils/               # Helper functions (to be created)
+└── styles/              # CSS files (to be created)
 ```
 
 ## Key Technical Decisions

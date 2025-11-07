@@ -1,6 +1,9 @@
 export interface Location {
+  code: string;
+  name: string;
   lat: number;
   lon: number;
-  name?: string;
+  elevation?: number;
+  timezone?: string;
 }
 

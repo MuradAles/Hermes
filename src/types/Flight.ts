@@ -1,5 +1,5 @@
-import { Location } from './Airport';
-import { TrainingLevel } from './User';
+import type { TrainingLevel } from './User';
+import type { Location } from './Airport';
 
 export interface Waypoint {
   lat: number;

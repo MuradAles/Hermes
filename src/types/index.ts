@@ -1,6 +1,6 @@
 // Re-export all types
-export * from './User';
-export * from './Flight';
-export * from './Weather';
-export * from './Airport';
+export type * from './User';
+export type * from './Flight';
+export type * from './Weather';
+export type * from './Airport';
 
