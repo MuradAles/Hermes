@@ -190,13 +190,13 @@ export * from './Airport';
 
 ## Checklist
 
-- [ ] Project initialized with Vite
-- [ ] Dependencies installed
-- [ ] Folder structure created
-- [ ] Environment variables set
-- [ ] Firebase initialized
-- [ ] TypeScript types defined
-- [ ] `npm run dev` works
+- [x] Project initialized with Vite
+- [x] Dependencies installed
+- [x] Folder structure created
+- [x] Environment variables set
+- [x] Firebase initialized
+- [x] TypeScript types defined
+- [x] `npm run dev` works
 
 ---
 
