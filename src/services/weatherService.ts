@@ -13,10 +13,16 @@ const WEATHER_MINIMUMS = {
 export const weatherService = {
   /**
    * Get weather conditions at a specific location
+   * @param lat - Latitude
+   * @param lon - Longitude
+   * @param time - Optional: ISO string or Date for forecast weather at that time
    */
-  async getWeatherAtLocation(lat: number, lon: number): Promise<WeatherConditions> {
+  async getWeatherAtLocation(lat: number, lon: number, time?: Date | string): Promise<WeatherConditions> {
     try {
-      const result = await getWeatherFunction({ lat, lon });
+      // Convert time to ISO string if it's a Date object
+      const timeParam = time instanceof Date ? time.toISOString() : time;
+      
+      const result = await getWeatherFunction({ lat, lon, time: timeParam });
       const data = result.data as any;
 
       return {
@@ -128,6 +134,7 @@ export const weatherService = {
 
   /**
    * Check weather along entire flight path
+   * Uses forecast weather based on arrival time at each waypoint
    */
   async checkFlightPath(
     waypoints: Array<{ lat: number; lon: number; time: Date }>,
@@ -137,7 +144,12 @@ export const weatherService = {
 
     for (const waypoint of waypoints) {
       try {
-        const weather = await this.getWeatherAtLocation(waypoint.lat, waypoint.lon);
+        // Pass the waypoint arrival time to get forecast weather for that time
+        const weather = await this.getWeatherAtLocation(
+          waypoint.lat, 
+          waypoint.lon, 
+          waypoint.time
+        );
         const safety = this.assessSafety(weather, trainingLevel);
 
         checkpoints.push({

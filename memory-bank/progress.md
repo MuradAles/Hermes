@@ -54,14 +54,26 @@
 - [x] Fix date display (Firestore Timestamp handling)
 - [x] Expand airport database to 55+ US airports
 
-### Day 3: 3D Visualization
-- [ ] Set up Cesium map component
-- [ ] Implement flight path visualization
-- [ ] Add weather overlay to globe
-- [ ] Create animated flight playback
-- [ ] Build playback controls (play, pause, speed, timeline)
-- [ ] Implement camera tracking
-- [ ] Add weather labels during playback
+### Day 3: 3D Visualization ✅ COMPLETE
+- [x] Set up Cesium map component
+- [x] Implement flight path visualization with altitude profiles
+- [x] Implement selective flight visibility (only show selected flights)
+- [x] Add dashed line style for selected flight paths
+- [x] Implement camera tracking with follow plane mode
+- [x] Create animated flight playback with realistic speeds
+- [x] Build playback controls (play, pause, speed, stop, follow)
+- [x] Add altitude indicator during playback (feet and knots)
+- [x] Add airport markers for selected flight
+- [x] Implement flight deletion with confirmation
+- [ ] Add weather overlay to globe (future enhancement)
+- [ ] Add weather labels during playback (future enhancement)
+
+### Flight Management Features ✅ COMPLETE
+- [x] Create flight with weather checking
+- [x] Real-time flight list updates (Firestore listeners)
+- [x] Flight selection with visual feedback
+- [x] Delete/cancel flights with confirmation dialog
+- [x] Auto-deselect when deleting selected flight
 
 ### Testing & Deployment
 - [ ] Manual testing of all features
@@ -73,9 +85,45 @@
 
 ## Current Status
 
-**Overall Progress:** ~75% (Planning, infrastructure, weather/AI complete and tested)
-**Last Session:** TASK-2 fully deployed and operational with live weather data
-**Next:** TASK-3 (3D Visualization with Cesium)
+**Overall Progress:** ~90% (Core features complete, ready for polish and deployment)
+**Last Session:** TASK-3 complete - selective visibility, dashed paths, flight deletion, altitude documentation
+**Next:** Optional enhancements (weather overlay, altitude adjustments) and deployment preparation
+
+## Session Summary: November 7, 2025
+
+### Features Implemented
+1. **Selective Flight Visibility**
+   - Modified CesiumMap to only render selected flight
+   - All unselected flights hidden from 3D globe
+   - Improves performance and reduces visual clutter
+
+2. **Dashed Path Lines**
+   - Implemented PolylineDashMaterialProperty for selected flights
+   - 16-pixel dash length for optimal visibility
+   - Better visual distinction for active flight path
+
+3. **Flight Deletion System**
+   - Complete CRUD operations now available (Create, Read, Delete)
+   - Confirmation dialog prevents accidental deletions
+   - Auto-deselection when deleting active flight
+   - Firestore security rules enforce user ownership
+
+### Files Modified (7 files)
+| File | Summary (5-6 words) |
+|------|---------------------|
+| `src/components/map/CesiumMap.tsx` | Selective visibility dashed line rendering |
+| `src/services/flightService.ts` | Delete flight firestore operation added |
+| `src/hooks/useFlights.ts` | Expose delete function to components |
+| `src/components/flights/FlightCard.tsx` | Delete button confirmation dialog integrated |
+| `src/components/layout/Sidebar.tsx` | Handle delete clear selected flight |
+| `src/components/flights/FlightCard.css` | Delete button styled with hover |
+| `firestore.rules` | Delete permissions verified and deployed |
+
+### Technical Insights Documented
+- **Altitude System:** 3-phase profile (climb 0-20%, cruise 20-80%, descent 80-100%)
+- **Current Settings:** 500 ft ground → 40,000 ft cruise → 500 ft landing
+- **Real-time Display:** AltitudeIndicator shows live altitude and speed
+- **Future Consideration:** Could adjust to 5,000 ft for realistic flight training
 
 ### Breakdown by Area
 
@@ -92,7 +140,7 @@
 - Folder structure created (components, services, hooks, types, utils, styles)
 - TypeScript types defined (User, Flight, Weather, Airport)
 
-**Core Features:** 70% 🔄
+**Core Features:** 85% 🔄
 - ✅ Authentication implemented (email/password + Google)
 - ✅ Core UI components created
 - ✅ Flight management infrastructure built
@@ -100,9 +148,14 @@
 - ✅ Weather integration complete (OpenWeatherMap)
 - ✅ AI integration complete (OpenAI with fallbacks)
 - ✅ Flight creation with weather checking
+- ✅ Flight deletion functionality (with confirmation)
 - ✅ Flight path calculations (great circle)
 - ✅ Safety assessment by training level
-- ❌ 3D visualization not implemented (TASK-3)
+- ✅ 3D visualization implemented (Cesium + Resium)
+- ✅ Animated flight playback with controls
+- ✅ Selective flight visibility (only selected flights shown)
+- ✅ Dashed line style for selected paths
+- ❌ Weather overlay visualization (TODO)
 
 **Testing & Deployment:** 0% ❌
 - No tests written
@@ -111,7 +164,7 @@
 ## Known Issues
 
 ### Current Issues
-- None (project in early planning phase)
+- None currently identified
 
 ### Potential Issues to Watch
 - API rate limits (OpenWeatherMap, OpenAI, Cesium)

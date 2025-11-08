@@ -2,9 +2,17 @@
 
 ## Current Work Focus
 
-**Status:** TASK-2 FULLY OPERATIONAL (deployed, tested, and verified)  
-**Current Phase:** Ready for TASK-3 (3D Visualization)  
-**Last Updated:** November 7, 2025 - All systems working with live APIs
+**Status:** TASK-3 COMPLETE ✅ (3D Visualization + Flight Management Features)  
+**Current Phase:** Core Application Complete - Ready for Deployment Preparation  
+**Last Updated:** November 7, 2025 - Memory bank updated with session summary
+
+### Quick Summary of Latest Session
+Three major features implemented:
+1. **Selective Visibility** - Only selected flights appear on map
+2. **Dashed Path Lines** - Visual distinction for active flight
+3. **Flight Deletion** - Complete delete functionality with confirmation
+
+**7 files modified** | **0 linter errors** | **Firestore rules deployed**
 
 ## Recent Changes
 
@@ -54,6 +62,35 @@
 7. **UI/UX:** Modern dark theme with blue accent color, responsive design
 8. **State Management:** Real-time data updates via Firestore listeners
 
+9. **TASK-3 Enhancements (Nov 7, 2025):**
+   - **Selective Flight Visibility:** Only selected flights are now displayed on the 3D map (all unselected flights are hidden)
+   - **Dashed Path Lines:** Selected flight paths now render with dashed lines using PolylineDashMaterialProperty for better visual distinction
+   - **Flight Deletion:** Added complete flight cancellation/deletion feature:
+     - Added `deleteFlight` method to flightService.ts (Firestore deleteDoc)
+     - Updated useFlights hook to expose deleteFlight function
+     - Added delete button to FlightCard component with confirmation dialog
+     - Delete button appears in bottom-right of each flight card with trash icon
+     - Automatically deselects deleted flight if it was currently selected
+     - Firestore security rules already support delete operations (deployed)
+   
+   **Files Modified with Summaries:**
+   - `src/components/map/CesiumMap.tsx` - Selective visibility dashed line rendering
+   - `src/services/flightService.ts` - Delete flight firestore operation added
+   - `src/hooks/useFlights.ts` - Expose delete function to components
+   - `src/components/flights/FlightCard.tsx` - Delete button confirmation dialog integrated
+   - `src/components/layout/Sidebar.tsx` - Handle delete clear selected flight
+   - `src/components/flights/FlightCard.css` - Delete button styled with hover
+   - `firestore.rules` - Delete permissions verified and deployed
+   
+   **Altitude System Documentation:**
+   - Flights use realistic 3-phase altitude profile (takeoff/cruise/landing)
+   - **Phase 1 (0-20%):** Climb from 500 ft → 40,000 ft
+   - **Phase 2 (20-80%):** Cruise at constant 40,000 ft altitude
+   - **Phase 3 (80-100%):** Descent from 40,000 ft → 500 ft
+   - Real-time altitude displayed in AltitudeIndicator component during playback
+   - Current cruise altitude: 40,000 ft (commercial airliner altitude)
+   - Note: Could be lowered to 5,000 ft for realistic flight training scenarios
+
 ## Current State
 
 ### What Exists
@@ -75,11 +112,10 @@
 - ✅ Project documentation complete
 
 ### What's Missing
-- ❌ Cesium 3D map implementation (real, currently placeholder)
 - ❌ Weather overlay visualization on map
-- ❌ Animated flight playback on map
-- ❌ Flight editing/deletion functionality
-- ❌ Dynamic altitude calculation (climb/cruise/descent phases)
+- ❌ Flight editing functionality (deletion completed ✅)
+- ❌ More sophisticated weather safety scoring
+- ❌ Historical flight data visualization
 
 ## Next Steps
 

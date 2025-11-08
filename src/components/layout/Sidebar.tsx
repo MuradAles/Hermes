@@ -4,6 +4,7 @@ import { useAuth } from '../../hooks/useAuth';
 import { useFlights } from '../../hooks/useFlights';
 import { FlightCard } from '../flights/FlightCard';
 import { FlightForm } from '../flights/FlightForm';
+import { WeatherAlert } from '../weather/WeatherAlert';
 import './Sidebar.css';
 
 interface SidebarProps {
@@ -14,8 +15,10 @@ interface SidebarProps {
 
 export const Sidebar: React.FC<SidebarProps> = ({ user, selectedFlightId, onSelectFlight }) => {
   const { signOut } = useAuth();
-  const { flights, loading } = useFlights(user.uid);
+  const { flights, loading, deleteFlight } = useFlights(user.uid);
   const [showNewFlight, setShowNewFlight] = useState(false);
+
+  const selectedFlight = flights.find(f => f.id === selectedFlightId);
 
   const handleNewFlight = () => {
     setShowNewFlight(true);
@@ -23,6 +26,19 @@ export const Sidebar: React.FC<SidebarProps> = ({ user, selectedFlightId, onSele
 
   const handleCloseForm = () => {
     setShowNewFlight(false);
+  };
+
+  const handleDeleteFlight = async (flightId: string) => {
+    try {
+      await deleteFlight(flightId);
+      // If the deleted flight was selected, clear selection
+      if (selectedFlightId === flightId) {
+        onSelectFlight('');
+      }
+    } catch (error) {
+      console.error('Error deleting flight:', error);
+      alert('Failed to delete flight. Please try again.');
+    }
   };
 
   return (
@@ -42,6 +58,8 @@ export const Sidebar: React.FC<SidebarProps> = ({ user, selectedFlightId, onSele
           <span className="plus-icon">+</span>
           New Flight
         </button>
+
+        {selectedFlight && <WeatherAlert flight={selectedFlight} />}
         
         <div className="flights-section">
           <h4 className="flights-title">Your Flights</h4>
@@ -60,6 +78,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ user, selectedFlightId, onSele
                   flight={flight}
                   isSelected={flight.id === selectedFlightId}
                   onSelect={() => onSelectFlight(flight.id)}
+                  onDelete={handleDeleteFlight}
                 />
               ))
             )}

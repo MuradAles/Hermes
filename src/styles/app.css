@@ -1,3 +1,5 @@
+@import './variables.css';
+
 /* Global Styles */
 * {
   margin: 0;
@@ -164,5 +166,24 @@ h5 { font-size: 14px; font-weight: 600; }
 *:focus-visible {
   outline: 2px solid var(--color-primary);
   outline-offset: 2px;
+}
+
+/* Dashboard Layout */
+.dashboard {
+  display: flex;
+  height: 100vh;
+  overflow: hidden;
+}
+
+.map-container {
+  flex: 1;
+  position: relative;
+}
+
+.loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100vh;
 }
 

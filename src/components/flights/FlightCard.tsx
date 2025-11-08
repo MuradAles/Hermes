@@ -5,9 +5,16 @@ import './FlightCard.css';
 export const FlightCard: React.FC<{ 
   flight: Flight; 
   isSelected: boolean; 
-  onSelect: () => void 
-}> = ({ flight, isSelected, onSelect }) => {
+  onSelect: () => void;
+  onDelete: (flightId: string) => void;
+}> = ({ flight, isSelected, onSelect, onDelete }) => {
   
+  const statusIcon = {
+    'safe': '✅',
+    'marginal': '⚠️',
+    'dangerous': '❌'
+  }[flight.safetyStatus] || '❓';
+
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'safe': return '#10b981';
@@ -62,17 +69,28 @@ export const FlightCard: React.FC<{
     });
   };
 
+  const handleDelete = (e: React.MouseEvent) => {
+    e.stopPropagation(); // Prevent card selection when clicking delete
+    if (window.confirm('Are you sure you want to cancel this flight?')) {
+      onDelete(flight.id);
+    }
+  };
+
   return (
     <div 
       className={`flight-card ${isSelected ? 'selected' : ''}`}
       onClick={onSelect}
+      style={{ borderLeft: `4px solid ${getStatusColor(flight.safetyStatus)}` }}
     >
-      <div className="flight-route">
-        <span className="airport-code">{flight.departure.code}</span>
-        <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-          <path d="M3 8h10M9 4l4 4-4 4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-        </svg>
-        <span className="airport-code">{flight.arrival.code}</span>
+      <div className="flight-header">
+        <div className="flight-route">
+          <span className="airport-code">{flight.departure.code}</span>
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+            <path d="M3 8h10M9 4l4 4-4 4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+          </svg>
+          <span className="airport-code">{flight.arrival.code}</span>
+        </div>
+        <span className="status-icon">{statusIcon}</span>
       </div>
       
       <div className="flight-names">
@@ -87,16 +105,19 @@ export const FlightCard: React.FC<{
         <span>{formatDate(flight.scheduledTime)} at {formatTime(flight.scheduledTime)}</span>
       </div>
       
-      <div 
-        className="flight-status-badge"
-        style={{ 
-          background: `${getStatusColor(flight.safetyStatus)}20`,
-          color: getStatusColor(flight.safetyStatus)
-        }}
-      >
-        <span className="status-dot" style={{ background: getStatusColor(flight.safetyStatus) }}></span>
-        {getStatusLabel(flight.safetyStatus)}
+      <div className="flight-details">
+        {Math.round(flight.path.totalDistance)} NM • {Math.round(flight.path.estimatedDuration)} min
       </div>
+      
+      <button 
+        className="delete-flight-btn" 
+        onClick={handleDelete}
+        title="Cancel Flight"
+      >
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+          <path d="M2 4h12M5.333 4V2.667a1.333 1.333 0 0 1 1.334-1.334h2.666a1.333 1.333 0 0 1 1.334 1.334V4m2 0v9.333a1.333 1.333 0 0 1-1.334 1.334H4.667a1.333 1.333 0 0 1-1.334-1.334V4h9.334z" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+        </svg>
+      </button>
     </div>
   );
 };

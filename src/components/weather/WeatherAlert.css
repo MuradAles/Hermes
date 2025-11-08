@@ -1,0 +1,60 @@
+.weather-alert {
+  margin: 20px;
+  padding: 16px;
+  border-radius: 12px;
+  border-left: 4px solid;
+}
+
+.weather-alert.dangerous {
+  background: rgba(239, 68, 68, 0.1);
+  border-color: #ef4444;
+}
+
+.weather-alert.marginal {
+  background: rgba(245, 158, 11, 0.1);
+  border-color: #f59e0b;
+}
+
+.alert-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.alert-header span {
+  font-size: 24px;
+}
+
+.alert-header h4 {
+  font-size: 16px;
+  font-weight: 600;
+  color: #fff;
+  margin: 0;
+}
+
+.weather-alert p {
+  margin: 0 0 12px 0;
+  color: #9ca3af;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.reschedule-btn {
+  width: 100%;
+  background: #60a5fa;
+  padding: 12px;
+  margin-top: 12px;
+  border: none;
+  border-radius: 8px;
+  color: white;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.reschedule-btn:hover {
+  background: #3b82f6;
+}
+

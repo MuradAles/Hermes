@@ -1,31 +1,40 @@
 .flight-card {
-  background: #0f172a;
-  border: 1px solid #1e293b;
-  border-radius: 12px;
+  background: #2a2a3e;
   padding: 16px;
-  margin-bottom: 12px;
+  border-radius: 8px;
   cursor: pointer;
+  margin-bottom: 12px;
   transition: all 0.2s;
+  position: relative;
 }
 
 .flight-card:hover {
-  background: #1e293b;
-  border-color: #334155;
+  background: #3a3a4e;
+  transform: translateX(4px);
 }
 
 .flight-card.selected {
-  background: #1e293b;
-  border-color: #60a5fa;
-  box-shadow: 0 0 0 2px #60a5fa20;
+  background: #3a3a4e;
+  box-shadow: 0 4px 12px rgba(96, 165, 250, 0.3);
+}
+
+.flight-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.status-icon {
+  font-size: 20px;
 }
 
 .flight-route {
   display: flex;
   align-items: center;
-  gap: 12px;
-  margin-bottom: 8px;
+  gap: 8px;
   color: #fff;
-  font-size: 18px;
+  font-size: 16px;
   font-weight: 600;
 }
 
@@ -41,7 +50,7 @@
 .flight-names {
   color: #9ca3af;
   font-size: 13px;
-  margin-bottom: 12px;
+  margin-bottom: 8px;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -51,28 +60,43 @@
   display: flex;
   align-items: center;
   gap: 8px;
-  color: #6b7280;
-  font-size: 13px;
-  margin-bottom: 12px;
+  color: #9ca3af;
+  font-size: 14px;
+  margin-bottom: 8px;
 }
 
 .flight-datetime svg {
   flex-shrink: 0;
 }
 
-.flight-status-badge {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  padding: 6px 12px;
-  border-radius: 6px;
+.flight-details {
   font-size: 12px;
-  font-weight: 600;
+  color: #6b7280;
+  padding-right: 40px; /* Make room for delete button */
 }
 
-.status-dot {
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
+.delete-flight-btn {
+  position: absolute;
+  bottom: 12px;
+  right: 12px;
+  background: transparent;
+  border: none;
+  color: #6b7280;
+  cursor: pointer;
+  padding: 6px;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+}
+
+.delete-flight-btn:hover {
+  background: rgba(239, 68, 68, 0.1);
+  color: #ef4444;
+}
+
+.delete-flight-btn:active {
+  transform: scale(0.95);
 }
 

@@ -72,6 +72,26 @@ App.tsx
   - **Red (#ef4444):** Dangerous status, errors
   - **Gray (#9ca3af):** Text, borders, backgrounds
 
+### 6. Selective Rendering Pattern
+- Only render selected entities to optimize performance
+- Hide all non-selected flights from 3D map
+- Reduces visual clutter and improves frame rates
+- Implementation: Conditional rendering based on selection state
+
+### 7. Confirmation Dialog Pattern
+- Destructive actions require user confirmation
+- Prevents accidental data loss (flight deletion)
+- Uses native browser confirm() for simplicity
+- Pattern: `e.stopPropagation()` to prevent parent click handlers
+
+### 8. Altitude Profile System
+- 3-phase altitude calculation for realistic flight paths:
+  - **Takeoff/Climb (0-20%):** Linear interpolation ground → cruise
+  - **Cruise (20-80%):** Constant altitude maintenance
+  - **Descent/Landing (80-100%):** Linear interpolation cruise → ground
+- Altitude converted from feet to meters for Cesium (multiply by 0.3048)
+- Real-time altitude tracking during playback animation
+
 ## Data Flow
 
 1. **User Input** → Component → Service → API

@@ -1,4 +1,4 @@
-import { collection, addDoc, query, where, orderBy, onSnapshot, Timestamp } from 'firebase/firestore';
+import { collection, addDoc, query, where, orderBy, onSnapshot, deleteDoc, doc, Timestamp } from 'firebase/firestore';
 import { db } from './firebase';
 import type { Flight } from '../types';
 
@@ -10,6 +10,10 @@ export const flightService = {
       updatedAt: Timestamp.now()
     });
     return docRef.id;
+  },
+
+  async deleteFlight(flightId: string): Promise<void> {
+    await deleteDoc(doc(db, 'flights', flightId));
   },
 
   subscribeToUserFlights(userId: string, callback: (flights: Flight[]) => void) {

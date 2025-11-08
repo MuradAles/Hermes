@@ -16,6 +16,8 @@ setGlobalOptions({maxInstances: 10});
 
 /**
  * Get weather data for a specific location
+ * If time is provided, fetches forecast weather for that time
+ * Otherwise, fetches current weather
  */
 export const getWeather = onCall(
   {
@@ -27,7 +29,7 @@ export const getWeather = onCall(
       throw new HttpsError("unauthenticated", "Function requires authentication");
     }
 
-    const {lat, lon} = request.data;
+    const {lat, lon, time} = request.data;
 
     if (!lat || !lon) {
       throw new HttpsError(
@@ -45,21 +47,88 @@ export const getWeather = onCall(
     }
 
     try {
-      logger.info(`Fetching weather for lat: ${lat}, lon: ${lon}`);
-
-      const response = await axios.get(
-        "https://api.openweathermap.org/data/2.5/weather",
-        {
-          params: {
-            lat,
-            lon,
-            appid: apiKey,
-            units: "imperial",
-          },
+      // If time is provided, fetch forecast weather
+      if (time) {
+        const targetTime = new Date(time).getTime();
+        const now = Date.now();
+        
+        // If target time is more than 5 days away, use current weather
+        // (OpenWeatherMap free tier forecast only covers 5 days)
+        if (targetTime > now + 5 * 24 * 60 * 60 * 1000) {
+          logger.info(`Target time too far in future, using current weather for lat: ${lat}, lon: ${lon}`);
+          const response = await axios.get(
+            "https://api.openweathermap.org/data/2.5/weather",
+            {
+              params: {
+                lat,
+                lon,
+                appid: apiKey,
+                units: "imperial",
+              },
+            }
+          );
+          return response.data;
         }
-      );
 
-      return response.data;
+        // Fetch 5-day forecast (3-hour intervals)
+        logger.info(`Fetching forecast weather for lat: ${lat}, lon: ${lon}, time: ${time}`);
+        const forecastResponse = await axios.get(
+          "https://api.openweathermap.org/data/2.5/forecast",
+          {
+            params: {
+              lat,
+              lon,
+              appid: apiKey,
+              units: "imperial",
+            },
+          }
+        );
+
+        // Find the forecast entry closest to the target time
+        const forecasts = forecastResponse.data.list;
+        let closestForecast = forecasts[0];
+        let minTimeDiff = Math.abs(new Date(closestForecast.dt * 1000).getTime() - targetTime);
+
+        for (const forecast of forecasts) {
+          const forecastTime = new Date(forecast.dt * 1000).getTime();
+          const timeDiff = Math.abs(forecastTime - targetTime);
+          
+          if (timeDiff < minTimeDiff) {
+            minTimeDiff = timeDiff;
+            closestForecast = forecast;
+          }
+        }
+
+        logger.info(`Found closest forecast: ${new Date(closestForecast.dt * 1000).toISOString()} (target: ${time})`);
+        
+        // Return forecast data in same format as current weather
+        return {
+          ...closestForecast,
+          main: closestForecast.main,
+          weather: closestForecast.weather,
+          clouds: closestForecast.clouds,
+          wind: closestForecast.wind,
+          visibility: closestForecast.visibility || 10000, // Default visibility if not provided
+          dt: closestForecast.dt,
+        };
+      } else {
+        // No time provided, fetch current weather
+        logger.info(`Fetching current weather for lat: ${lat}, lon: ${lon}`);
+
+        const response = await axios.get(
+          "https://api.openweathermap.org/data/2.5/weather",
+          {
+            params: {
+              lat,
+              lon,
+              appid: apiKey,
+              units: "imperial",
+            },
+          }
+        );
+
+        return response.data;
+      }
     } catch (error: any) {
       logger.error("Error fetching weather:", error);
       throw new HttpsError(

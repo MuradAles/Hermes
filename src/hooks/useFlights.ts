@@ -21,6 +21,10 @@ export const useFlights = (userId: string) => {
     return await flightService.createFlight(flightData);
   };
 
-  return { flights, loading, createFlight };
+  const deleteFlight = async (flightId: string) => {
+    return await flightService.deleteFlight(flightId);
+  };
+
+  return { flights, loading, createFlight, deleteFlight };
 };
 

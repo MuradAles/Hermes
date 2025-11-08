@@ -459,15 +459,15 @@ export default defineConfig({
 
 ## Checklist
 
-- [ ] Cesium map renders
-- [ ] Flight paths display on globe
-- [ ] Colors match safety status
-- [ ] Click flight zooms to location
-- [ ] Flight cards show status icons
-- [ ] Weather alerts display
-- [ ] Flight form integrated
-- [ ] Styling polished
-- [ ] No console errors
+- [x] Cesium map renders
+- [x] Flight paths display on globe
+- [x] Colors match safety status
+- [x] Click flight zooms to location
+- [x] Flight cards show status icons
+- [x] Weather alerts display
+- [x] Flight form integrated
+- [x] Styling polished
+- [x] No console errors
 
 ---
 
