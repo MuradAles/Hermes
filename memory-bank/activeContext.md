@@ -2,17 +2,31 @@
 
 ## Current Work Focus
 
-**Status:** Weather Forecast System Enhanced ✅  
-**Current Phase:** Core Application Complete - Ready for Deployment Preparation  
-**Last Updated:** December 2025 - Forecast weather based on arrival times implemented
+**Status:** Modern UI Redesign & Weather Intelligence Complete ✅  
+**Current Phase:** Production Ready - All Core Features Complete  
+**Last Updated:** November 8, 2025 - Flight creation UX overhaul, intelligent ceiling estimation, AI optimizations
 
-### Quick Summary of Latest Session
-**Forecast Weather Implementation:**
-1. **Time-Based Weather Forecasts** - Weather now fetched for arrival time at each waypoint
-2. **Firebase Function Enhanced** - Supports forecast API with time parameter
-3. **Weather Service Updated** - Passes waypoint arrival times to fetch forecast weather
+### Quick Summary of Latest Session (November 8, 2025)
+**Flight Creation & Weather System Major Overhaul:**
+1. **Intelligent Ceiling Estimation** - Fixed 500ft bug; now uses cloud %, weather type, visibility for realistic ceiling heights (500ft-25,000ft)
+2. **Complete UI Redesign** - Modern FlightForm with gradients, animations, purple theme, better spacing, custom scrollbar
+3. **Improved Table Design** - 3 columns (When/Safety/Issues), badge-style safety display, pill-style issue tags
+4. **Instant Row Selection** - Click AI search results to instantly populate form (no double weather checks!)
+5. **Performance Optimization** - AI search caches all weather data, clicking rows uses cached data (massive speedup)
+6. **Descriptive Training Levels** - "Student Pilot", "Private Pilot", "Commercial Pilot", "Instrument Rated" (not Level 1-4)
+7. **Unified Reschedule UX** - RescheduleModal now has same beautiful AI search table as FlightForm
 
-**2 files modified** | **0 linter errors** | **Backward compatible**
+**8 files modified** | **0 linter errors** | **Major UX/performance improvements** | **No double-checking waste**
+
+### Previous Session: 3D Model Enhancements
+**3D Model & Visualization Enhancements:**
+1. **Custom 3D Plane Models** - Support for .glb/.gltf files, plane selector dropdown at top right
+2. **Real-Time Model Switching** - Model changes update without restarting animation
+3. **Visual Improvements** - Thinner flight path lines, plane flies above path, highlight dot on path
+4. **Follow Plane Optimizations** - Fixed camera lag, zoom towards plane, performance improvements
+5. **Airport Markers** - 3-letter airport codes displayed with stroke for visibility
+
+**10+ files modified** | **Performance optimized** | **User experience improved**
 
 ## Recent Changes
 
@@ -109,6 +123,89 @@
    **Files Modified with Summaries:**
    - `src/components/map/AnimatedFlight.tsx` - Clock range changed to CLAMPED
    - `src/components/map/CesiumMap.tsx` - Follow mode top-down view implementation
+
+11. **Flight Creation UX & Weather Intelligence Overhaul (Nov 8, 2025):**
+   - **Intelligent Ceiling Estimation (Bug Fix):**
+     - Fixed 500ft ceiling bug (was defaulting all overcast skies to 500ft)
+     - New algorithm considers: cloud coverage %, weather type (thunderstorm/rain/snow/fog), visibility
+     - Clear skies: 25,000ft | Overcast + good visibility: 6,000ft | Fog: 500ft | Thunderstorms: 800ft
+     - Much more realistic ceiling variation for flight planning
+   
+   - **Complete FlightForm UI Redesign:**
+     - Modern purple gradient theme with animations (fadeIn, slideUp, shake, pulse)
+     - Beautiful card with glow shadow and triple-layered box-shadow
+     - Custom purple-themed scrollbar
+     - Enhanced buttons with gradient backgrounds and hover effects
+     - Improved form spacing and typography (13-16px fonts)
+     - Better error display with shake animation
+   
+   - **AI Search Table Improvements:**
+     - Redesigned with 3 clean columns: "When" | "Safety" | "Issues"
+     - Badge-style safety display (icon + label + score %)
+     - Pill-style issue tags with color coding
+     - Clickable rows to instantly select time
+     - Sorted: Safe first, then Marginal, then Dangerous
+   
+   - **Performance Optimization (Eliminated Double-Checking):**
+     - AI search now caches all weather checkpoint data
+     - Clicking a table row uses cached data (instant!)
+     - Before: AI checks 20 times → User clicks → Check again (waste!)
+     - After: AI checks 20 times → User clicks → Use cached data (instant!)
+   
+   - **Training Level Display Enhancement:**
+     - Changed from "Level 1-4" to descriptive names
+     - "Student Pilot", "Private Pilot", "Commercial Pilot", "Instrument Rated"
+     - Updated Login.tsx, User.ts, Weather.ts to use descriptive names
+     - Both old and new formats supported in TRAINING_LEVEL_MINIMUMS
+   
+   - **RescheduleModal Unified Experience:**
+     - Same beautiful AI search table as FlightForm
+     - 20 time slots checked across 5 days (not 10 hours)
+     - Clickable rows for instant rescheduling
+     - Uses cached weather data (no re-checking)
+   
+   **Files Modified with Summaries:**
+   - `src/services/weatherService.ts` - Intelligent ceiling estimation algorithm
+   - `src/services/aiService.ts` - Cache checkpoint data in allResults
+   - `src/components/flights/FlightForm.tsx` - Complete UI redesign, instant row selection
+   - `src/components/flights/FlightForm.css` - Modern design system with animations
+   - `src/components/flights/RescheduleModal.tsx` - AI search table integration
+   - `src/components/flights/RescheduleModal.css` - Table styling
+   - `src/types/Weather.ts` - Descriptive training level mappings
+   - `src/types/User.ts` - Updated TrainingLevel type
+
+11. **3D Model Support & Visualization Enhancements (Dec 2025):**
+   - **Custom Plane Models:** Added support for .glb/.gltf files in public/assets folder
+   - **Plane Selector Component:** Dropdown at top right to choose between 5 aircraft models
+   - **Real-Time Model Updates:** Model changes without restarting animation (stable entity IDs)
+   - **Visual Refinements:**
+     - Flight path line made thinner (3px selected, 2px unselected)
+     - Plane flies 300 feet above path line for better visibility
+     - Highlight dot positioned 25 feet below path line to track flight path
+   - **Follow Plane Improvements:**
+     - Fixed camera lag by using postRender event instead of requestAnimationFrame
+     - Zoom now targets plane position instead of mouse position
+     - Added distance check (>1m) to reduce unnecessary camera updates
+   - **Performance Optimizations:**
+     - Reduced position samples from 10 to 5 per segment
+     - Optimized camera follow handler to only update when plane moves
+   - **Airport Markers:**
+     - Display only 3-letter airport codes (no full names)
+     - Removed point markers, using billboards with canvas-generated text
+     - Text has black stroke/outline for visibility against any background
+   - **Bug Fixes:**
+     - Fixed duplicate React key warnings
+     - Fixed CORS errors from Bing Maps fallback tiles
+     - Suppressed non-critical imagery tile errors
+   
+   **Files Created:**
+   - `src/components/map/PlaneSelector.tsx` - Plane model selection dropdown
+   - `src/components/map/PlaneSelector.css` - Styling for plane selector
+   
+   **Files Modified:**
+   - `src/components/map/AnimatedFlight.tsx` - Model support, highlight dot, position offsets
+   - `src/components/map/CesiumMap.tsx` - Follow plane optimizations, imagery provider fixes
+   - `src/components/map/AirportMarkers.tsx` - Billboard text with stroke, removed rectangles
 
 ## Current State
 

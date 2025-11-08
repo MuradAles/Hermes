@@ -21,6 +21,7 @@
 - **Weather Data:** OpenWeatherMap API
   - Free tier: 1,000 calls/day
   - Current weather API
+  - Forecast API (5-day, 3-hour intervals)
   - Weather map tiles for visualization
 - **AI Service:** OpenAI API
   - GPT-3.5 or GPT-4
@@ -29,8 +30,15 @@
 - **3D Assets:** Cesium Ion (Free tier)
   - 3D terrain data
   - Building data
-  - Satellite imagery
+  - Satellite imagery (Ion World Imagery)
   - 50,000 tile requests/month limit
+  - **Note:** Bing Maps fallback disabled, using Ion World Imagery exclusively
+
+### 3D Model Assets
+- **Format Support:** .glb (binary GLTF) and .gltf (text GLTF)
+- **Storage:** Models stored in `public/assets/` folder
+- **Available Models:** 5 aircraft models (G3 JSC Air, Sierra ARC Air, WB57 JSC Air, C20A AFRC UAVSAR, G4 NOAA Air)
+- **Model Properties:** Scale 2000x, minimumPixelSize 128px, maximumScale 20000
 
 ### Development Tools
 - **Version Control:** Git

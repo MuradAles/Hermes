@@ -1,10 +1,11 @@
 import React, { useState } from 'react';
-import type { User } from '../../types';
+import type { User, Flight } from '../../types';
 import { useAuth } from '../../hooks/useAuth';
 import { useFlights } from '../../hooks/useFlights';
 import { FlightCard } from '../flights/FlightCard';
 import { FlightForm } from '../flights/FlightForm';
 import { WeatherAlert } from '../weather/WeatherAlert';
+import { RescheduleModal } from '../flights/RescheduleModal';
 import './Sidebar.css';
 
 interface SidebarProps {
@@ -15,8 +16,9 @@ interface SidebarProps {
 
 export const Sidebar: React.FC<SidebarProps> = ({ user, selectedFlightId, onSelectFlight }) => {
   const { signOut } = useAuth();
-  const { flights, loading, deleteFlight } = useFlights(user.uid);
+  const { flights, loading, deleteFlight, rescheduleFlight } = useFlights(user.uid);
   const [showNewFlight, setShowNewFlight] = useState(false);
+  const [flightToReschedule, setFlightToReschedule] = useState<Flight | null>(null);
 
   const selectedFlight = flights.find(f => f.id === selectedFlightId);
 
@@ -38,6 +40,27 @@ export const Sidebar: React.FC<SidebarProps> = ({ user, selectedFlightId, onSele
     } catch (error) {
       console.error('Error deleting flight:', error);
       alert('Failed to delete flight. Please try again.');
+    }
+  };
+
+  const handleReschedule = (flight: Flight) => {
+    setFlightToReschedule(flight);
+  };
+
+  const handleCloseReschedule = () => {
+    setFlightToReschedule(null);
+  };
+
+  const handleConfirmReschedule = async (oldFlightId: string, newFlightData: any) => {
+    try {
+      await rescheduleFlight(oldFlightId, newFlightData);
+      // If rescheduled flight was selected, clear selection
+      if (selectedFlightId === oldFlightId) {
+        onSelectFlight('');
+      }
+    } catch (error) {
+      console.error('Error rescheduling flight:', error);
+      throw error; // Re-throw to show error in modal
     }
   };
 
@@ -79,6 +102,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ user, selectedFlightId, onSele
                   isSelected={flight.id === selectedFlightId}
                   onSelect={() => onSelectFlight(flight.id)}
                   onDelete={handleDeleteFlight}
+                  onReschedule={handleReschedule}
                 />
               ))
             )}
@@ -87,6 +111,13 @@ export const Sidebar: React.FC<SidebarProps> = ({ user, selectedFlightId, onSele
       </aside>
 
       {showNewFlight && <FlightForm user={user} onClose={handleCloseForm} />}
+      {flightToReschedule && (
+        <RescheduleModal
+          flight={flightToReschedule}
+          onClose={handleCloseReschedule}
+          onReschedule={handleConfirmReschedule}
+        />
+      )}
     </>
   );
 };

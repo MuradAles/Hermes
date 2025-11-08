@@ -1,6 +1,6 @@
 .altitude-indicator {
   position: absolute;
-  top: 20px;
+  top: 100px; /* Position below plane selector */
   right: 20px;
   background: rgba(26, 26, 46, 0.95);
   backdrop-filter: blur(10px);

@@ -58,7 +58,7 @@
   - Weather service passes waypoint arrival times
   - Uses 5-day forecast with closest match algorithm
 
-### Day 3: 3D Visualization ✅ COMPLETE
+### Day 3: 3D Visualization ✅ COMPLETE + ENHANCED
 - [x] Set up Cesium map component
 - [x] Implement flight path visualization with altitude profiles
 - [x] Implement selective flight visibility (only show selected flights)
@@ -69,6 +69,13 @@
 - [x] Add altitude indicator during playback (feet and knots)
 - [x] Add airport markers for selected flight
 - [x] Implement flight deletion with confirmation
+- [x] **Custom 3D plane models** - Support for .glb/.gltf files
+- [x] **Plane selector** - Dropdown to choose aircraft model
+- [x] **Real-time model switching** - Changes without restarting animation
+- [x] **Visual refinements** - Thinner lines, plane above path, highlight dot
+- [x] **Follow plane optimizations** - Fixed lag, zoom towards plane
+- [x] **Performance improvements** - Reduced samples, optimized camera updates
+- [x] **Airport code labels** - 3-letter codes with stroke for visibility
 - [ ] Add weather overlay to globe (future enhancement)
 - [ ] Add weather labels during playback (future enhancement)
 
@@ -89,9 +96,121 @@
 
 ## Current Status
 
-**Overall Progress:** ~92% (Core features complete, forecast weather enhanced, ready for polish and deployment)
-**Last Session:** Forecast weather system enhanced - weather now fetched for arrival times at waypoints
-**Next:** Optional enhancements (weather overlay visualization, altitude adjustments) and deployment preparation
+**Overall Progress:** ~96% (Core features complete, UI polished, performance optimized, production-ready)
+**Last Session:** November 8, 2025 - Flight creation UX overhaul, weather intelligence, performance optimizations
+**Next:** Final polish, testing, and deployment preparation
+
+## Session Summary: November 8, 2025 - Flight Creation & Weather System Overhaul
+
+### Major Improvements
+1. **Intelligent Ceiling Estimation (Critical Bug Fix)**
+   - Problem: All overcast skies defaulted to 500ft ceiling (unrealistic)
+   - Solution: Advanced algorithm using cloud %, weather type, and visibility
+   - Result: Realistic ceiling variation (500ft for fog → 25,000ft for clear → 6,000ft for high overcast)
+
+2. **Complete FlightForm UI Redesign**
+   - Modern purple gradient theme with smooth animations
+   - Professional card design with glow effects
+   - Enhanced buttons, spacing, typography
+   - Custom scrollbar matching theme
+
+3. **AI Search Table Redesign**
+   - 3 clean columns: When | Safety | Issues
+   - Badge-style safety display (✅ Safe 96%)
+   - Pill-style issue tags
+   - Instant row selection (click to populate form)
+
+4. **Performance Optimization - Eliminated Double-Checking**
+   - AI now caches all weather checkpoint data
+   - Clicking table rows uses cached data (instant!)
+   - Massive speedup: No redundant API calls
+
+5. **Descriptive Training Levels**
+   - Changed from "Level 1-4" to proper names
+   - "Student Pilot", "Private Pilot", "Commercial Pilot", "Instrument Rated"
+
+6. **Unified Reschedule Experience**
+   - RescheduleModal now has same AI table as FlightForm
+   - Same clickable rows, cached data, beautiful design
+
+### Files Modified (8 files)
+| File | Summary |
+|------|---------|
+| `src/services/weatherService.ts` | Intelligent ceiling algorithm |
+| `src/services/aiService.ts` | Cache weather checkpoints |
+| `src/components/flights/FlightForm.tsx` | Complete UI redesign |
+| `src/components/flights/FlightForm.css` | Modern design system |
+| `src/components/flights/RescheduleModal.tsx` | AI table integration |
+| `src/components/flights/RescheduleModal.css` | Table styling |
+| `src/types/Weather.ts` | Descriptive level mappings |
+| `src/types/User.ts` | Updated TrainingLevel type |
+
+### User Experience Improvements
+- ✅ Realistic ceiling estimates for accurate flight planning
+- ✅ Beautiful, modern UI that feels professional
+- ✅ Instant row selection (no waiting for re-checks)
+- ✅ Clear, descriptive pilot certification levels
+- ✅ Consistent experience between flight creation and rescheduling
+
+## Session Summary: December 2025 - 3D Model Support & Visualization Enhancements
+
+### Features Implemented
+1. **Custom 3D Plane Models**
+   - Added support for .glb and .gltf file formats
+   - Models stored in `public/assets/` folder
+   - 5 aircraft models available: G3 JSC Air, Sierra ARC Air, WB57 JSC Air, C20A AFRC UAVSAR, G4 NOAA Air
+   - Plane selector dropdown at top right of map
+   - Models scale to 2000x for visibility
+
+2. **Real-Time Model Switching**
+   - Model changes update without restarting animation
+   - Stable entity IDs based only on flight ID (not model URI)
+   - Model URI updated dynamically via useEffect
+   - Clock state preserved during model changes
+
+3. **Visual Improvements**
+   - Flight path lines made thinner (3px selected, 2px unselected)
+   - Plane flies 300 feet above path line
+   - Highlight dot positioned 25 feet below path line
+   - Airport markers show only 3-letter codes with black stroke
+
+4. **Follow Plane Optimizations**
+   - Fixed camera lag by switching from requestAnimationFrame to postRender event
+   - Zoom now targets plane position instead of mouse position
+   - Added distance check (>1m) to reduce unnecessary updates
+   - Camera updates synchronized with scene rendering
+
+5. **Performance Optimizations**
+   - Reduced position samples from 10 to 5 per segment
+   - Camera follow handler only updates when plane moves significantly
+   - Suppressed non-critical CORS/timeout errors from imagery tiles
+
+6. **Bug Fixes**
+   - Fixed duplicate React key warnings (unique keys for each component)
+   - Fixed CORS errors from Bing Maps fallback tiles
+   - Forced Ion World Imagery to prevent Bing Maps fallback
+   - Added error handling for imagery provider failures
+
+### Files Created (2 files)
+| File | Summary |
+|------|---------|
+| `src/components/map/PlaneSelector.tsx` | Dropdown component for selecting plane models |
+| `src/components/map/PlaneSelector.css` | Styling for plane selector component |
+
+### Files Modified (4 files)
+| File | Summary |
+|------|---------|
+| `src/components/map/AnimatedFlight.tsx` | Model support, highlight dot, position offsets, reduced samples |
+| `src/components/map/CesiumMap.tsx` | Follow plane optimizations, imagery provider fixes, zoom handler |
+| `src/components/map/AirportMarkers.tsx` | Billboard text with stroke, removed point markers |
+| `public/assets/*.glb` | 5 aircraft model files added |
+
+### Technical Insights Documented
+- **Model Format:** Cesium supports .glb (binary GLTF) and .gltf (text GLTF) formats
+- **Entity ID Strategy:** Stable IDs based on flight ID only, model URI updated dynamically
+- **Camera Synchronization:** postRender event ensures camera updates match scene rendering
+- **Performance:** Distance checks and reduced samples improve frame rates
+- **Imagery Provider:** Ion World Imagery forced to prevent Bing Maps CORS issues
 
 ## Session Summary: December 2025 - Forecast Weather Enhancement
 

@@ -70,14 +70,20 @@ export const Login: React.FC = () => {
           />
           
           {!isLogin && (
-            <select 
-              value={trainingLevel} 
-              onChange={(e) => setTrainingLevel(e.target.value as TrainingLevel)}
-            >
-              <option value="student-pilot">Student Pilot</option>
-              <option value="private-pilot">Private Pilot</option>
-              <option value="instrument-rated">Instrument Rated</option>
-            </select>
+            <div>
+              <label style={{ display: 'block', marginBottom: '8px', color: 'var(--color-text-secondary)', fontSize: '14px' }}>
+                Pilot Certification Level
+              </label>
+              <select 
+                value={trainingLevel} 
+                onChange={(e) => setTrainingLevel(e.target.value as TrainingLevel)}
+              >
+                <option value="student-pilot">Student Pilot (Clear skies only, 5mi vis, 3000ft ceiling)</option>
+                <option value="private-pilot">Private Pilot (VFR, 4mi vis, 2500ft ceiling)</option>
+                <option value="commercial-pilot">Commercial Pilot (VFR, 3mi vis, 1000ft ceiling)</option>
+                <option value="instrument-rated">Instrument Rated (IFR capable, IMC acceptable)</option>
+              </select>
+            </div>
           )}
           
           <button type="submit" className="btn-primary">

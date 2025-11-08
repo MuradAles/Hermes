@@ -5,9 +5,10 @@ import './AltitudeIndicator.css';
 interface AltitudeIndicatorProps {
   viewer: any;
   isPlaying: boolean;
+  entityId: string;
 }
 
-export const AltitudeIndicator: React.FC<AltitudeIndicatorProps> = ({ viewer, isPlaying }) => {
+export const AltitudeIndicator: React.FC<AltitudeIndicatorProps> = ({ viewer, isPlaying, entityId }) => {
   const [altitude, setAltitude] = useState(0);
   const [speed, setSpeed] = useState(0);
 
@@ -18,7 +19,7 @@ export const AltitudeIndicator: React.FC<AltitudeIndicatorProps> = ({ viewer, is
     let lastTime: any = null;
 
     const interval = setInterval(() => {
-      const entity = viewer.entities.getById('animated-plane');
+      const entity = viewer.entities.getById(entityId);
       if (entity && entity.position) {
         try {
           const currentTime = viewer.clock.currentTime;
@@ -60,7 +61,7 @@ export const AltitudeIndicator: React.FC<AltitudeIndicatorProps> = ({ viewer, is
     }, 100);
 
     return () => clearInterval(interval);
-  }, [viewer, isPlaying]);
+  }, [viewer, isPlaying, entityId]);
 
   // Only show when playing and entity exists
   if (!isPlaying) return null;

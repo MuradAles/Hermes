@@ -25,7 +25,14 @@ export interface Flight {
   trainingLevel: TrainingLevel;
   path: FlightPath;
   safetyStatus: 'safe' | 'marginal' | 'dangerous';
-  status: 'scheduled' | 'in-progress' | 'completed' | 'cancelled';
+  status: 'scheduled' | 'in-progress' | 'completed' | 'cancelled' | 'rescheduled';
+  weatherData?: any; // Weather report data
+  lastSafetyStatus?: string; // GREEN/YELLOW/RED for comparison
+  weatherCheckedAt?: Date;
+  needsRescheduling?: boolean; // Flag for in-app notification
+  rescheduledFrom?: string | null; // ID of old flight if this is a rescheduled flight
+  rescheduledTo?: string | null; // ID of new flight if this was rescheduled
+  rescheduledAt?: Date | null;
   createdAt: Date;
   updatedAt: Date;
 }

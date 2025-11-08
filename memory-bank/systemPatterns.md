@@ -92,6 +92,75 @@ App.tsx
 - Altitude converted from feet to meters for Cesium (multiply by 0.3048)
 - Real-time altitude tracking during playback animation
 
+### 9. Weather Data Caching Pattern
+- AI search checks 20 time slots and stores all weather checkpoint data
+- Cached data includes: checkpoints[], safety status, scores, issues
+- Table row clicks use cached data instead of re-checking
+- Eliminates redundant API calls and provides instant UX
+- Implementation: `allResults` array in aiService stores checkpoints
+- Benefits: Massive performance gain, reduced API usage, better UX
+
+### 10. Intelligent Ceiling Estimation Pattern
+- Multi-factor ceiling calculation instead of simple lookup
+- **Factors considered:**
+  1. Cloud coverage percentage (0-100%)
+  2. Weather type ID (thunderstorm, rain, snow, fog, clear)
+  3. Visibility in miles (proxy for cloud base height)
+- **Algorithm logic:**
+  - Clear skies (< 10% clouds) → 25,000 ft
+  - Thunderstorms → 800 ft (low ceilings)
+  - Heavy rain → 1,200 ft
+  - Light rain → 2,500 ft
+  - Fog/Mist → 500 ft
+  - High overcast + good visibility → 6,000 ft
+- **Result:** Realistic ceiling variation for accurate flight planning
+- **Note:** OpenWeatherMap doesn't provide actual ceiling, this is estimation
+
+### 11. Modern UI Design System
+- **Color Scheme:** Purple/indigo gradient theme (#6366f1, #4f46e5)
+- **Animations:** fadeIn, slideUp, shake (errors), pulse (loading)
+- **Gradients:** Diagonal linear-gradients for depth
+- **Shadows:** Multi-layer box-shadows with glow effects
+- **Typography:** 11-16px range, proper hierarchy, letter-spacing
+- **Buttons:** Gradient backgrounds with lift effects on hover
+- **Forms:** Custom styling with focus glow states
+- **Scrollbars:** Custom themed scrollbar (purple)
+- **Cards:** Rounded corners (12-24px), gradient backgrounds
+- **Tables:** Badge-style status, pill-style tags, hover animations
+
+### 12. Badge & Pill Pattern
+- **Safety Badges:** Icon + label + score percentage
+  - Example: ✅ Safe 96%
+  - Color-coded based on status (green/yellow/red)
+- **Issue Pills:** Individual issue tags with background tint
+  - Left border accent color
+  - Compact, readable format
+- **Benefits:** Visual clarity, scannable information, professional look
+- Plane flies 300 feet above path line for visibility
+- Highlight dot positioned 25 feet below path line
+
+### 9. 3D Model Management Pattern
+- **Model Format:** Supports .glb (binary) and .gltf (text) GLTF formats
+- **Model Storage:** Models stored in `public/assets/` folder
+- **Dynamic Model Updates:** Model URI updated in-place without recreating entity
+- **Stable Entity IDs:** Entity IDs based only on flight ID, not model URI
+- **Real-Time Switching:** Model changes preserve animation state and clock position
+- **Model Selection:** Dropdown UI component for choosing aircraft models
+
+### 10. Camera Follow Optimization Pattern
+- **Synchronization:** Use `postRender` event instead of `requestAnimationFrame` for camera updates
+- **Performance:** Only update camera when plane moves >1 meter (distance check)
+- **Zoom Behavior:** Zoom targets plane position, not mouse position when following
+- **Orientation Preservation:** Camera position tracks plane, but user controls rotation/zoom
+- **Event Cleanup:** Properly remove event listeners on component unmount
+
+### 11. Billboard Text Rendering Pattern
+- **Canvas-Based Text:** Generate text images using HTML5 Canvas for reliable rendering
+- **Stroke for Visibility:** Black stroke/outline around colored text for readability
+- **Billboard Entities:** Use billboards instead of labels for better compatibility
+- **Always Visible:** Set `disableDepthTestDistance: Infinity` for text overlays
+- **Memoization:** Cache generated images with useMemo to avoid regeneration
+
 ## Data Flow
 
 1. **User Input** → Component → Service → API
@@ -154,6 +223,10 @@ src/
 - **Rate Limiting:** API calls throttled to stay within limits (200ms delay between waypoint checks)
 - **Optimistic Updates:** UI updates immediately, syncs with server
 - **Efficient Queries:** Firestore queries optimized with indexes
+- **Position Sample Optimization:** Reduced samples from 10 to 5 per segment for smoother performance
+- **Camera Update Throttling:** Only update camera when plane moves >1 meter
+- **Event Synchronization:** Use postRender event for camera updates to match scene rendering
+- **Error Suppression:** Suppress non-critical imagery tile errors (CORS, timeouts) to reduce console noise
 
 ## Weather Forecasting Pattern
 

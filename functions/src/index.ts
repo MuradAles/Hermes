@@ -1,10 +1,12 @@
 import {onCall, HttpsError} from "firebase-functions/v2/https";
+import {onSchedule} from "firebase-functions/v2/scheduler";
 import {setGlobalOptions} from "firebase-functions/v2";
 import * as admin from "firebase-admin";
 import axios from "axios";
 import OpenAI from "openai";
 import * as logger from "firebase-functions/logger";
 import * as dotenv from "dotenv";
+import {monitorAllFlights} from "./weatherMonitor";
 
 // Load environment variables from .env file
 dotenv.config();
@@ -84,6 +86,23 @@ export const getWeather = onCall(
           }
         );
 
+        // Validate forecast response
+        if (!forecastResponse.data || !forecastResponse.data.list || !Array.isArray(forecastResponse.data.list) || forecastResponse.data.list.length === 0) {
+          logger.warn("Forecast API returned invalid data, falling back to current weather");
+          const response = await axios.get(
+            "https://api.openweathermap.org/data/2.5/weather",
+            {
+              params: {
+                lat,
+                lon,
+                appid: apiKey,
+                units: "imperial",
+              },
+            }
+          );
+          return response.data;
+        }
+
         // Find the forecast entry closest to the target time
         const forecasts = forecastResponse.data.list;
         let closestForecast = forecasts[0];
@@ -102,14 +121,17 @@ export const getWeather = onCall(
         logger.info(`Found closest forecast: ${new Date(closestForecast.dt * 1000).toISOString()} (target: ${time})`);
         
         // Return forecast data in same format as current weather
+        // Ensure all required fields have defaults
         return {
           ...closestForecast,
-          main: closestForecast.main,
-          weather: closestForecast.weather,
-          clouds: closestForecast.clouds,
-          wind: closestForecast.wind,
-          visibility: closestForecast.visibility || 10000, // Default visibility if not provided
-          dt: closestForecast.dt,
+          main: closestForecast.main || {temp: 70, feels_like: 70, temp_min: 70, temp_max: 70, pressure: 1013, humidity: 50},
+          weather: closestForecast.weather || [{id: 800, main: "Clear", description: "clear sky", icon: "01d"}],
+          clouds: closestForecast.clouds || {all: 0},
+          wind: closestForecast.wind || {speed: 0, deg: 0},
+          visibility: closestForecast.visibility !== undefined ? closestForecast.visibility : 10000, // Default to 10km visibility
+          dt: closestForecast.dt || Math.floor(Date.now() / 1000),
+          rain: closestForecast.rain || undefined,
+          snow: closestForecast.snow || undefined,
         };
       } else {
         // No time provided, fetch current weather
@@ -254,3 +276,54 @@ function generateFallbackSuggestions(originalTime: string) {
     },
   ];
 }
+
+/**
+ * Scheduled function to monitor weather hourly
+ * NOTE: Requires Firebase Blaze (pay-as-you-go) plan
+ * Runs every hour to check all scheduled flights
+ */
+export const hourlyWeatherMonitoring = onSchedule(
+  {
+    schedule: "every 1 hours",
+    timeZone: "America/New_York", // Adjust to your timezone
+    retryCount: 3,
+    memory: "256MiB",
+  },
+  async (event) => {
+    logger.info("Hourly weather monitoring triggered", {time: event.scheduleTime});
+
+    try {
+      await monitorAllFlights();
+      logger.info("Hourly weather monitoring completed successfully");
+    } catch (error: any) {
+      logger.error("Hourly weather monitoring failed:", error);
+      throw error;
+    }
+  }
+);
+
+/**
+ * Manual trigger for weather monitoring (for admin dashboard)
+ * Can be called from admin page to force weather check
+ */
+export const triggerWeatherCheck = onCall(
+  {
+    cors: ["http://localhost:5174", "http://localhost:5173", "https://hermes-path.web.app", "https://hermes-path.firebaseapp.com"],
+  },
+  async (request) => {
+    // Require authentication
+    if (!request.auth) {
+      throw new HttpsError("unauthenticated", "Must be logged in to trigger weather check");
+    }
+
+    logger.info("Manual weather check triggered by", request.auth.uid);
+
+    try {
+      await monitorAllFlights();
+      return {success: true, message: "Weather check completed"};
+    } catch (error: any) {
+      logger.error("Manual weather check failed:", error);
+      throw new HttpsError("internal", `Weather check failed: ${error.message}`);
+    }
+  }
+);

@@ -25,6 +25,14 @@ export const useFlights = (userId: string) => {
     return await flightService.deleteFlight(flightId);
   };
 
-  return { flights, loading, createFlight, deleteFlight };
+  const rescheduleFlight = async (oldFlightId: string, newFlightData: Omit<Flight, 'id'>) => {
+    return await flightService.rescheduleFlight(oldFlightId, newFlightData);
+  };
+
+  const dismissNotification = async (flightId: string) => {
+    return await flightService.dismissReschedulingNotification(flightId);
+  };
+
+  return { flights, loading, createFlight, deleteFlight, rescheduleFlight, dismissNotification };
 };
 

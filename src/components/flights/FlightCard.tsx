@@ -7,7 +7,8 @@ export const FlightCard: React.FC<{
   isSelected: boolean; 
   onSelect: () => void;
   onDelete: (flightId: string) => void;
-}> = ({ flight, isSelected, onSelect, onDelete }) => {
+  onReschedule?: (flight: Flight) => void;
+}> = ({ flight, isSelected, onSelect, onDelete, onReschedule }) => {
   
   const statusIcon = {
     'safe': '✅',
@@ -76,12 +77,25 @@ export const FlightCard: React.FC<{
     }
   };
 
+  const handleReschedule = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (onReschedule) {
+      onReschedule(flight);
+    }
+  };
+
   return (
     <div 
       className={`flight-card ${isSelected ? 'selected' : ''}`}
       onClick={onSelect}
       style={{ borderLeft: `4px solid ${getStatusColor(flight.safetyStatus)}` }}
     >
+      {flight.needsRescheduling && (
+        <div className="weather-alert-banner">
+          ⚠️ Weather Alert! Please reschedule this flight.
+        </div>
+      )}
+      
       <div className="flight-header">
         <div className="flight-route">
           <span className="airport-code">{flight.departure.code}</span>
@@ -109,15 +123,29 @@ export const FlightCard: React.FC<{
         {Math.round(flight.path.totalDistance)} NM • {Math.round(flight.path.estimatedDuration)} min
       </div>
       
-      <button 
-        className="delete-flight-btn" 
-        onClick={handleDelete}
-        title="Cancel Flight"
-      >
-        <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-          <path d="M2 4h12M5.333 4V2.667a1.333 1.333 0 0 1 1.334-1.334h2.666a1.333 1.333 0 0 1 1.334 1.334V4m2 0v9.333a1.333 1.333 0 0 1-1.334 1.334H4.667a1.333 1.333 0 0 1-1.334-1.334V4h9.334z" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-        </svg>
-      </button>
+      <div className="flight-actions">
+        {flight.status === 'scheduled' && onReschedule && (
+          <button 
+            className="reschedule-flight-btn" 
+            onClick={handleReschedule}
+            title="Reschedule Flight"
+          >
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+              <path d="M12 8v4M10 10h4M8 2.667V1.333M3.757 3.757l-.943-.943M1.333 8H0M3.757 12.243l-.943.943M8 14.667v1.333M13.243 12.243l.943.943M14.667 8H16" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+            </svg>
+          </button>
+        )}
+        
+        <button 
+          className="delete-flight-btn" 
+          onClick={handleDelete}
+          title="Cancel Flight"
+        >
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+            <path d="M2 4h12M5.333 4V2.667a1.333 1.333 0 0 1 1.334-1.334h2.666a1.333 1.333 0 0 1 1.334 1.334V4m2 0v9.333a1.333 1.333 0 0 1-1.334 1.334H4.667a1.333 1.333 0 0 1-1.334-1.334V4h9.334z" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+          </svg>
+        </button>
+      </div>
     </div>
   );
 };
