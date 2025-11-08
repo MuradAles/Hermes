@@ -41,11 +41,24 @@ export const FlightForm: React.FC<FlightFormProps> = ({ user, onClose, onPathPre
     topIssues: string[];
     checkpoints: WeatherCheckpoint[] | null;
   }> | null>(null);
+  // Set default date/time to today
+  const getTodayDate = () => {
+    const today = new Date();
+    return today.toISOString().split('T')[0];
+  };
+
+  const getTodayTime = () => {
+    const now = new Date();
+    const hours = String(now.getHours()).padStart(2, '0');
+    const minutes = String(now.getMinutes()).padStart(2, '0');
+    return `${hours}:${minutes}`;
+  };
+
   const [formData, setFormData] = useState({
     departureCode: 'ORD',
     arrivalCode: 'JFK',
-    date: '',
-    time: '',
+    date: getTodayDate(),
+    time: getTodayTime(),
   });
 
   // Step 1: Check weather conditions
@@ -311,64 +324,75 @@ export const FlightForm: React.FC<FlightFormProps> = ({ user, onClose, onPathPre
             </div>
           )}
 
-          <div className="form-group">
-            <label htmlFor="departure">Departure Airport</label>
-            <select
-              id="departure"
-              value={formData.departureCode}
-              onChange={(e) => setFormData({ ...formData, departureCode: e.target.value })}
-              disabled={loading || weatherChecked}
-              required
-            >
-              {Object.entries(AIRPORTS).map(([code, airport]) => (
-                <option key={code} value={code}>
-                  {code} - {airport.name}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          <div className="form-group">
-            <label htmlFor="arrival">Arrival Airport</label>
-            <select
-              id="arrival"
-              value={formData.arrivalCode}
-              onChange={(e) => setFormData({ ...formData, arrivalCode: e.target.value })}
-              disabled={loading || weatherChecked}
-              required
-            >
-              {Object.entries(AIRPORTS).map(([code, airport]) => (
-                <option key={code} value={code}>
-                  {code} - {airport.name}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          <div className="form-row">
-            <div className="form-group">
-              <label htmlFor="date">Date</label>
-              <input
-                id="date"
-                type="date"
-                value={formData.date}
-                onChange={(e) => setFormData({ ...formData, date: e.target.value })}
+          {/* Airport Selection - Side by Side */}
+          <div className="airports-row">
+            <div className="form-group airport-group">
+              <label htmlFor="departure">Departure Airport</label>
+              <select
+                id="departure"
+                value={formData.departureCode}
+                onChange={(e) => setFormData({ ...formData, departureCode: e.target.value })}
                 disabled={loading || weatherChecked}
                 required
-                min={new Date().toISOString().split('T')[0]}
-              />
+              >
+                {Object.entries(AIRPORTS).map(([code, airport]) => (
+                  <option key={code} value={code}>
+                    {code} - {airport.name}
+                  </option>
+                ))}
+              </select>
             </div>
 
-            <div className="form-group">
-              <label htmlFor="time">Time</label>
-              <input
-                id="time"
-                type="time"
-                value={formData.time}
-                onChange={(e) => setFormData({ ...formData, time: e.target.value })}
+            <div className="airport-arrow">→</div>
+
+            <div className="form-group airport-group">
+              <label htmlFor="arrival">Arrival Airport</label>
+              <select
+                id="arrival"
+                value={formData.arrivalCode}
+                onChange={(e) => setFormData({ ...formData, arrivalCode: e.target.value })}
                 disabled={loading || weatherChecked}
                 required
-              />
+              >
+                {Object.entries(AIRPORTS).map(([code, airport]) => (
+                  <option key={code} value={code}>
+                    {code} - {airport.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+          </div>
+
+          {/* Date & Time - More Visible */}
+          <div className="datetime-section">
+            <label className="datetime-label">Flight Date & Time</label>
+            <div className="datetime-row">
+              <div className="form-group datetime-group">
+                <label htmlFor="date">Date</label>
+                <input 
+                  id="date"
+                  type="date" 
+                  value={formData.date}
+                  onChange={(e) => setFormData({ ...formData, date: e.target.value })}
+                  min={new Date().toISOString().split('T')[0]}
+                  disabled={loading || weatherChecked}
+                  required
+                  className="datetime-input"
+                />
+              </div>
+
+              <div className="form-group datetime-group">
+                <label htmlFor="time">Time</label>
+                <input 
+                  id="time"
+                  type="time" 
+                  value={formData.time}
+                  onChange={(e) => setFormData({ ...formData, time: e.target.value })}
+                  disabled={loading || weatherChecked}
+                  required
+                  className="datetime-input"
+                />
+              </div>
             </div>
           </div>
 
@@ -396,7 +420,7 @@ export const FlightForm: React.FC<FlightFormProps> = ({ user, onClose, onPathPre
                 type="button"
                 onClick={handleFindSafeTime}
                 disabled={loading || aiSearching}
-                className="btn-ai-finder"
+                className="btn-primary"
               >
                 {aiSearching ? '🔍 Searching...' : '🤖 AI: Find Safe Time For Me'}
               </button>
@@ -665,7 +689,7 @@ export const FlightForm: React.FC<FlightFormProps> = ({ user, onClose, onPathPre
                     type="button" 
                     onClick={handleCreateFlight} 
                     disabled={loading} 
-                    className="btn-primary btn-success"
+                    className="btn-success"
                   >
                     {loading ? 'Creating Flight...' : '✈️ Create Flight'}
                   </button>

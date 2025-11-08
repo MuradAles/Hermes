@@ -12,8 +12,13 @@ export const flightService = {
     return docRef.id;
   },
 
-  async deleteFlight(flightId: string): Promise<void> {
-    await deleteDoc(doc(db, 'flights', flightId));
+  async cancelFlight(flightId: string): Promise<void> {
+    await updateDoc(doc(db, 'flights', flightId), {
+      status: 'cancelled',
+      cancelledAt: Timestamp.now(),
+      updatedAt: Timestamp.now(),
+      needsRescheduling: false // Clear notification if present
+    });
   },
 
   async rescheduleFlight(oldFlightId: string, newFlightData: Omit<Flight, 'id'>): Promise<string> {
@@ -55,8 +60,8 @@ export const flightService = {
         id: doc.id,
         ...doc.data()
       })) as Flight[];
-      // Filter out rescheduled flights from main view
-      const activeFlights = flights.filter(f => f.status !== 'rescheduled');
+      // Filter out rescheduled and cancelled flights from main view
+      const activeFlights = flights.filter(f => f.status !== 'rescheduled' && f.status !== 'cancelled');
       callback(activeFlights);
     });
   },

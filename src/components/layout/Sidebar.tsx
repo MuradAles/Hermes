@@ -2,10 +2,12 @@ import React, { useState } from 'react';
 import type { User, Flight } from '../../types';
 import { useAuth } from '../../hooks/useAuth';
 import { useFlights } from '../../hooks/useFlights';
+import { useToast } from '../../hooks/useToast';
 import { FlightCard } from '../flights/FlightCard';
 import { FlightForm } from '../flights/FlightForm';
 import { WeatherAlert } from '../weather/WeatherAlert';
 import { RescheduleModal } from '../flights/RescheduleModal';
+import { ToastContainer } from '../ui/Toast';
 import './Sidebar.css';
 
 interface SidebarProps {
@@ -16,7 +18,8 @@ interface SidebarProps {
 
 export const Sidebar: React.FC<SidebarProps> = ({ user, selectedFlightId, onSelectFlight }) => {
   const { signOut } = useAuth();
-  const { flights, loading, deleteFlight, rescheduleFlight } = useFlights(user.uid);
+  const { flights, loading, cancelFlight, rescheduleFlight } = useFlights(user.uid);
+  const { toasts, showToast, removeToast } = useToast();
   const [showNewFlight, setShowNewFlight] = useState(false);
   const [flightToReschedule, setFlightToReschedule] = useState<Flight | null>(null);
 
@@ -30,16 +33,17 @@ export const Sidebar: React.FC<SidebarProps> = ({ user, selectedFlightId, onSele
     setShowNewFlight(false);
   };
 
-  const handleDeleteFlight = async (flightId: string) => {
+  const handleCancelFlight = async (flightId: string) => {
     try {
-      await deleteFlight(flightId);
-      // If the deleted flight was selected, clear selection
+      await cancelFlight(flightId);
+      // If the cancelled flight was selected, clear selection
       if (selectedFlightId === flightId) {
         onSelectFlight('');
       }
+      showToast('Flight cancelled successfully', 'success');
     } catch (error) {
-      console.error('Error deleting flight:', error);
-      alert('Failed to delete flight. Please try again.');
+      console.error('Error cancelling flight:', error);
+      showToast('Failed to cancel flight. Please try again.', 'error');
     }
   };
 
@@ -101,7 +105,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ user, selectedFlightId, onSele
                   flight={flight}
                   isSelected={flight.id === selectedFlightId}
                   onSelect={() => onSelectFlight(flight.id)}
-                  onDelete={handleDeleteFlight}
+                  onCancel={handleCancelFlight}
                   onReschedule={handleReschedule}
                 />
               ))
@@ -118,6 +122,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ user, selectedFlightId, onSele
           onReschedule={handleConfirmReschedule}
         />
       )}
+      <ToastContainer toasts={toasts} onRemove={removeToast} />
     </>
   );
 };

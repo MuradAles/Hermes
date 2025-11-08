@@ -270,6 +270,7 @@ export const RescheduleModal: React.FC<RescheduleModalProps> = ({ flight, onClos
                           if (aOrder !== bOrder) return aOrder - bOrder;
                           return (b.safety?.score ?? 0) - (a.safety?.score ?? 0);
                         })
+                        .slice(0, 3) // Show only top 3 best options
                         .map((result, idx) => (
                         <tr 
                           key={idx} 

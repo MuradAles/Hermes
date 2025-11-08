@@ -33,6 +33,7 @@ export interface Flight {
   rescheduledFrom?: string | null; // ID of old flight if this is a rescheduled flight
   rescheduledTo?: string | null; // ID of new flight if this was rescheduled
   rescheduledAt?: Date | null;
+  cancelledAt?: Date | null; // Timestamp when flight was cancelled
   createdAt: Date;
   updatedAt: Date;
 }

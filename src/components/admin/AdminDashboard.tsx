@@ -3,6 +3,8 @@ import { flightService } from '../../services/flightService';
 import type { Flight } from '../../types';
 import { httpsCallable } from 'firebase/functions';
 import { functions } from '../../services/firebase';
+import { useToast } from '../../hooks/useToast';
+import { ToastContainer } from '../ui/Toast';
 import './AdminDashboard.css';
 
 export const AdminDashboard: React.FC = () => {
@@ -10,6 +12,7 @@ export const AdminDashboard: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<'active' | 'rescheduled' | 'canceled'>('active');
   const [refreshing, setRefreshing] = useState(false);
+  const { toasts, showToast, removeToast } = useToast();
 
   useEffect(() => {
     const unsubscribe = flightService.subscribeToAllFlights((flights) => {
@@ -25,10 +28,10 @@ export const AdminDashboard: React.FC = () => {
     try {
       const triggerWeatherCheck = httpsCallable(functions, 'triggerWeatherCheck');
       await triggerWeatherCheck();
-      alert('Weather check completed successfully!');
+      showToast('Weather check completed successfully!', 'success');
     } catch (error: any) {
       console.error('Error triggering weather check:', error);
-      alert(`Failed to trigger weather check: ${error.message}`);
+      showToast(`Failed to trigger weather check: ${error.message}`, 'error');
     } finally {
       setRefreshing(false);
     }
@@ -119,7 +122,7 @@ export const AdminDashboard: React.FC = () => {
           </button>
           <button 
             className="btn-alert"
-            onClick={() => alert('🚨 TEST ALERT: Weather monitoring system is active!')}
+            onClick={() => showToast('🚨 TEST ALERT: Weather monitoring system is active!', 'info')}
           >
             🔔 Test Alert
           </button>
@@ -252,6 +255,7 @@ export const AdminDashboard: React.FC = () => {
           </div>
         </div>
       </div>
+      <ToastContainer toasts={toasts} onRemove={removeToast} />
     </div>
   );
 };

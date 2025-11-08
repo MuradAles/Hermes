@@ -326,3 +326,4 @@ function getSafetyColor(status: string, trainingLevel: string): string {
 
 
 
+

@@ -1,14 +1,16 @@
-import React from 'react';
+import React, { useState } from 'react';
 import type { Flight } from '../../types';
+import { FlightActionsMenu } from './FlightActionsMenu';
 import './FlightCard.css';
 
 export const FlightCard: React.FC<{ 
   flight: Flight; 
   isSelected: boolean; 
   onSelect: () => void;
-  onDelete: (flightId: string) => void;
+  onCancel: (flightId: string) => void;
   onReschedule?: (flight: Flight) => void;
-}> = ({ flight, isSelected, onSelect, onDelete, onReschedule }) => {
+}> = ({ flight, isSelected, onSelect, onCancel, onReschedule }) => {
+  const [showMenu, setShowMenu] = useState(false);
   
   const statusIcon = {
     'safe': '✅',
@@ -70,15 +72,16 @@ export const FlightCard: React.FC<{
     });
   };
 
-  const handleDelete = (e: React.MouseEvent) => {
-    e.stopPropagation(); // Prevent card selection when clicking delete
-    if (window.confirm('Are you sure you want to cancel this flight?')) {
-      onDelete(flight.id);
-    }
+  const handleMenuToggle = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setShowMenu(!showMenu);
   };
 
-  const handleReschedule = (e: React.MouseEvent) => {
-    e.stopPropagation();
+  const handleCancel = () => {
+    onCancel(flight.id);
+  };
+
+  const handleReschedule = () => {
     if (onReschedule) {
       onReschedule(flight);
     }
@@ -124,27 +127,24 @@ export const FlightCard: React.FC<{
       </div>
       
       <div className="flight-actions">
-        {flight.status === 'scheduled' && onReschedule && (
-          <button 
-            className="reschedule-flight-btn" 
-            onClick={handleReschedule}
-            title="Reschedule Flight"
-          >
-            <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-              <path d="M12 8v4M10 10h4M8 2.667V1.333M3.757 3.757l-.943-.943M1.333 8H0M3.757 12.243l-.943.943M8 14.667v1.333M13.243 12.243l.943.943M14.667 8H16" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-            </svg>
-          </button>
-        )}
-        
         <button 
-          className="delete-flight-btn" 
-          onClick={handleDelete}
-          title="Cancel Flight"
+          className="flight-menu-btn" 
+          onClick={handleMenuToggle}
+          title="Flight Options"
         >
           <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-            <path d="M2 4h12M5.333 4V2.667a1.333 1.333 0 0 1 1.334-1.334h2.666a1.333 1.333 0 0 1 1.334 1.334V4m2 0v9.333a1.333 1.333 0 0 1-1.334 1.334H4.667a1.333 1.333 0 0 1-1.334-1.334V4h9.334z" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+            <circle cx="8" cy="4" r="1.5" fill="currentColor"/>
+            <circle cx="8" cy="8" r="1.5" fill="currentColor"/>
+            <circle cx="8" cy="12" r="1.5" fill="currentColor"/>
           </svg>
         </button>
+        <FlightActionsMenu
+          isOpen={showMenu}
+          onClose={() => setShowMenu(false)}
+          onCancel={handleCancel}
+          onReschedule={handleReschedule}
+          canReschedule={flight.status === 'scheduled' && !!onReschedule}
+        />
       </div>
     </div>
   );
