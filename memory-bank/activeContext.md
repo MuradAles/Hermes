@@ -2,17 +2,17 @@
 
 ## Current Work Focus
 
-**Status:** TASK-3 COMPLETE ✅ (3D Visualization + Flight Management Features)  
+**Status:** Weather Forecast System Enhanced ✅  
 **Current Phase:** Core Application Complete - Ready for Deployment Preparation  
-**Last Updated:** November 7, 2025 - Memory bank updated with session summary
+**Last Updated:** December 2025 - Forecast weather based on arrival times implemented
 
 ### Quick Summary of Latest Session
-Three major features implemented:
-1. **Selective Visibility** - Only selected flights appear on map
-2. **Dashed Path Lines** - Visual distinction for active flight
-3. **Flight Deletion** - Complete delete functionality with confirmation
+**Forecast Weather Implementation:**
+1. **Time-Based Weather Forecasts** - Weather now fetched for arrival time at each waypoint
+2. **Firebase Function Enhanced** - Supports forecast API with time parameter
+3. **Weather Service Updated** - Passes waypoint arrival times to fetch forecast weather
 
-**7 files modified** | **0 linter errors** | **Firestore rules deployed**
+**2 files modified** | **0 linter errors** | **Backward compatible**
 
 ## Recent Changes
 
@@ -39,6 +39,11 @@ Three major features implemented:
    - Firebase Functions deployed with environment variables from `.env`
    - CORS enabled on Cloud Functions
    - Both `getWeather` and `generateReschedule` functions live and operational
+   - **ENHANCED:** Forecast weather system - weather fetched based on arrival time at each waypoint
+     - Firebase function now accepts optional `time` parameter
+     - Uses OpenWeatherMap forecast API (5-day, 3-hour intervals)
+     - Finds closest forecast entry to waypoint arrival time
+     - Falls back to current weather if time > 5 days in future
    
 3. **Bug Fixes Applied:**
    - Fixed TypeScript import errors (type-only imports for verbatimModuleSyntax)
@@ -90,6 +95,20 @@ Three major features implemented:
    - Real-time altitude displayed in AltitudeIndicator component during playback
    - Current cruise altitude: 40,000 ft (commercial airliner altitude)
    - Note: Could be lowered to 5,000 ft for realistic flight training scenarios
+
+10. **Animation & Camera Control Fixes (Nov 7-8, 2025):**
+   - **Animation Loop Fixed:** Changed clock range from LOOP_STOP (2) to CLAMPED (1)
+   - Animation now stops at landing instead of auto-restarting
+   - **Camera Globe Rotation:** Camera now rotates with Earth's curvature during follow
+   - **Follow Button Improvements:**
+     - Camera starts with top-down view (100km directly above plane)
+     - User can freely rotate/zoom while following
+     - Camera tracks plane position but preserves user orientation
+     - No more locked camera - full manual control while following
+   
+   **Files Modified with Summaries:**
+   - `src/components/map/AnimatedFlight.tsx` - Clock range changed to CLAMPED
+   - `src/components/map/CesiumMap.tsx` - Follow mode top-down view implementation
 
 ## Current State
 
@@ -156,6 +175,10 @@ Three major features implemented:
 - **Flight Path Calculation:** Great circle navigation with spherical trigonometry
 - **Weather Checkpoints:** Weather checked at waypoints spaced 50nm apart
 - **Safety Assessment:** Training-level based scoring (Student/Private/Instrument/Commercial)
+- **Forecast Weather:** Weather fetched for arrival time at each waypoint (not current weather)
+  - Calculates arrival time based on departure time, distance, and speed (120 knots)
+  - Uses OpenWeatherMap forecast API to get weather for that specific time
+  - Falls back to current weather if forecast unavailable or > 5 days away
 
 ## Blockers & Challenges
 

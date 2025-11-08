@@ -53,6 +53,10 @@
 - [x] Test with real weather data - WORKING
 - [x] Fix date display (Firestore Timestamp handling)
 - [x] Expand airport database to 55+ US airports
+- [x] **ENHANCED:** Forecast weather system - weather fetched for arrival time at waypoints
+  - Firebase function supports time parameter for forecast API
+  - Weather service passes waypoint arrival times
+  - Uses 5-day forecast with closest match algorithm
 
 ### Day 3: 3D Visualization ✅ COMPLETE
 - [x] Set up Cesium map component
@@ -85,45 +89,79 @@
 
 ## Current Status
 
-**Overall Progress:** ~90% (Core features complete, ready for polish and deployment)
-**Last Session:** TASK-3 complete - selective visibility, dashed paths, flight deletion, altitude documentation
-**Next:** Optional enhancements (weather overlay, altitude adjustments) and deployment preparation
+**Overall Progress:** ~92% (Core features complete, forecast weather enhanced, ready for polish and deployment)
+**Last Session:** Forecast weather system enhanced - weather now fetched for arrival times at waypoints
+**Next:** Optional enhancements (weather overlay visualization, altitude adjustments) and deployment preparation
 
-## Session Summary: November 7, 2025
+## Session Summary: December 2025 - Forecast Weather Enhancement
 
 ### Features Implemented
-1. **Selective Flight Visibility**
-   - Modified CesiumMap to only render selected flight
-   - All unselected flights hidden from 3D globe
-   - Improves performance and reduces visual clutter
+1. **Time-Based Weather Forecasts**
+   - Weather now fetched for arrival time at each waypoint (not current weather)
+   - Calculates arrival time: `departureTime + (distance / 120 knots) * 60 minutes`
+   - Uses OpenWeatherMap forecast API (5-day, 3-hour intervals)
+   - Finds closest forecast entry to waypoint arrival time
+   - Falls back to current weather if forecast unavailable or > 5 days away
 
-2. **Dashed Path Lines**
-   - Implemented PolylineDashMaterialProperty for selected flights
-   - 16-pixel dash length for optimal visibility
-   - Better visual distinction for active flight path
+2. **Firebase Function Enhancement**
+   - `getWeather` function now accepts optional `time` parameter (ISO string)
+   - If time provided: fetches forecast and returns closest match
+   - If time not provided: returns current weather (backward compatible)
+   - Handles edge cases (time too far in future, API errors)
 
-3. **Flight Deletion System**
-   - Complete CRUD operations now available (Create, Read, Delete)
-   - Confirmation dialog prevents accidental deletions
-   - Auto-deselection when deleting active flight
-   - Firestore security rules enforce user ownership
+3. **Weather Service Update**
+   - `getWeatherAtLocation()` accepts optional `time` parameter (Date or ISO string)
+   - `checkFlightPath()` passes waypoint arrival times to weather service
+   - Maintains backward compatibility (time parameter is optional)
 
-### Files Modified (7 files)
-| File | Summary (5-6 words) |
-|------|---------------------|
-| `src/components/map/CesiumMap.tsx` | Selective visibility dashed line rendering |
-| `src/services/flightService.ts` | Delete flight firestore operation added |
-| `src/hooks/useFlights.ts` | Expose delete function to components |
-| `src/components/flights/FlightCard.tsx` | Delete button confirmation dialog integrated |
-| `src/components/layout/Sidebar.tsx` | Handle delete clear selected flight |
-| `src/components/flights/FlightCard.css` | Delete button styled with hover |
-| `firestore.rules` | Delete permissions verified and deployed |
+### Files Modified (2 files)
+| File | Summary |
+|------|---------|
+| `functions/src/index.ts` | Added forecast weather support with time parameter |
+| `src/services/weatherService.ts` | Updated to pass waypoint arrival times for forecast weather |
 
 ### Technical Insights Documented
-- **Altitude System:** 3-phase profile (climb 0-20%, cruise 20-80%, descent 80-100%)
-- **Current Settings:** 500 ft ground → 40,000 ft cruise → 500 ft landing
-- **Real-time Display:** AltitudeIndicator shows live altitude and speed
-- **Future Consideration:** Could adjust to 5,000 ft for realistic flight training
+- **Forecast Weather Flow:** 
+  1. Calculate waypoint arrival times based on distance and speed (120 knots)
+  2. Pass arrival time to Firebase function
+  3. Function fetches 5-day forecast (3-hour intervals)
+  4. Finds closest forecast entry to target time
+  5. Returns forecast weather for that time
+- **OpenWeatherMap Limits:** Free tier forecast covers 5 days max
+- **Fallback Strategy:** Current weather used if forecast unavailable or > 5 days
+- **Backward Compatibility:** Time parameter optional, existing code still works
+
+## Session Summary: November 8, 2025 (Animation & Camera Fixes)
+
+### Issues Fixed
+1. **Animation Auto-Restart Bug**
+   - Problem: Flight animation would restart from beginning after landing
+   - Solution: Changed Cesium clock range from LOOP_STOP (2) to CLAMPED (1)
+   - Result: Animation now stops cleanly at destination
+
+2. **Camera Globe Rotation**
+   - Problem: Camera didn't rotate with Earth's curvature during long flights
+   - Solution: Calculate and update camera orientation vectors (up, direction, right)
+   - Result: Camera maintains proper orientation relative to Earth's surface
+
+3. **Follow Button Behavior**
+   - Problem: Follow mode locked camera completely, no manual control
+   - Solution: Separate position tracking from orientation control
+   - Enhancement: Added automatic top-down view initialization (100km above plane)
+   - Result: Camera follows plane's position but user controls rotation/zoom
+
+### Files Modified (2 files)
+| File | Summary (5-6 words) |
+|------|---------------------|
+| `src/components/map/AnimatedFlight.tsx` | Clock range changed to CLAMPED |
+| `src/components/map/CesiumMap.tsx` | Follow mode top-down view implementation |
+
+### User Experience Improvements
+- ✅ Animations end gracefully without restart
+- ✅ Long-distance flights display correctly (no upside-down views)
+- ✅ Follow button provides consistent top-down starting view
+- ✅ Full camera control maintained while following plane
+- ✅ Professional, smooth camera tracking behavior
 
 ### Breakdown by Area
 

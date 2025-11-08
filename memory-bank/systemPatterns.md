@@ -151,9 +151,27 @@ src/
 
 - **Lazy Loading:** Components loaded on demand
 - **Caching:** Weather data cached for 30 minutes
-- **Rate Limiting:** API calls throttled to stay within limits
+- **Rate Limiting:** API calls throttled to stay within limits (200ms delay between waypoint checks)
 - **Optimistic Updates:** UI updates immediately, syncs with server
 - **Efficient Queries:** Firestore queries optimized with indexes
+
+## Weather Forecasting Pattern
+
+- **Time-Based Forecasts:** Weather fetched for specific arrival times, not current conditions
+- **Forecast API:** Uses OpenWeatherMap 5-day forecast (3-hour intervals)
+- **Closest Match:** Finds forecast entry closest to waypoint arrival time
+- **Fallback Strategy:** Falls back to current weather if:
+  - Forecast unavailable (API error)
+  - Target time > 5 days in future (forecast limit)
+- **Calculation Flow:**
+  1. Generate waypoints along great circle route (every 50nm)
+  2. Calculate arrival time for each waypoint: `departureTime + (distance / speed) * 60min`
+  3. Fetch forecast weather for that arrival time
+  4. Assess safety based on training level minimums
+- **Implementation:** 
+  - Firebase function accepts optional `time` parameter (ISO string)
+  - Weather service passes waypoint `time` to Firebase function
+  - Function selects closest forecast entry from 3-hour interval data
 
 ## Error Handling Patterns
 

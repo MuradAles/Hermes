@@ -6,13 +6,10 @@ import {
   Cesium3DTileset, 
   ShadowMode,
   Matrix4,
-  HeadingPitchRange,
   Math as CesiumMath,
   Ion,
   ArcType,
-  PolylineGlowMaterialProperty,
   PolylineDashMaterialProperty,
-  JulianDate,
   Cartographic
 } from 'cesium';
 import { useFlights } from '../../hooks/useFlights';
@@ -156,36 +153,9 @@ export const CesiumMap: React.FC<CesiumMapProps> = ({ selectedFlightId }) => {
     const planePosition = entity.position?.getValue(viewer.clock.currentTime);
     if (!planePosition) return;
     
-    // First, fly camera to a good position near the plane
-    const cartographic = Cartographic.fromCartesian(planePosition);
-    const cameraDistance = 150000; // 150km away from plane
-    
-    // Position camera above and behind the plane
-    const initialCameraPos = Cartesian3.fromRadians(
-      cartographic.longitude,
-      cartographic.latitude - CesiumMath.toRadians(0.5), // Slightly south
-      cartographic.height + cameraDistance
-    );
-    
-    // Fly to initial position
-    viewer.camera.flyTo({
-      destination: initialCameraPos,
-      orientation: {
-        heading: 0,
-        pitch: CesiumMath.toRadians(-45), // Look down at 45 degrees
-        roll: 0
-      },
-      duration: 1.5,
-      complete: () => {
-        // After flying, start the smooth follow loop
-        startFollowing();
-      }
-    });
-    
     let animationFrameId: number;
     let isUserInteracting = false;
     let interactionTimeout: number | undefined;
-    let lastPlanePosition: Cartesian3 | null = null;
     let isFollowingActive = false;
     
     // Detect when user starts interacting with camera
@@ -209,37 +179,75 @@ export const CesiumMap: React.FC<CesiumMapProps> = ({ selectedFlightId }) => {
     
     const startFollowing = () => {
       isFollowingActive = true;
-      lastPlanePosition = entity.position?.getValue(viewer.clock.currentTime) || null;
+      let lastPlanePosition: Cartesian3 | null = null;
+      let isInitialized = false;
       
       const followAnimation = () => {
         if (!isFollowingActive || !followPlane || !isPlaying) return;
         
         const currentPlanePosition = entity.position?.getValue(viewer.clock.currentTime);
         
-        if (currentPlanePosition && lastPlanePosition && !isUserInteracting) {
-          // Calculate how much the plane moved since last frame
-          const planeMovement = Cartesian3.subtract(
-            currentPlanePosition, 
-            lastPlanePosition, 
-            new Cartesian3()
-          );
-          
-          // Only move camera if plane actually moved (avoid jitter)
-          const movementMagnitude = Cartesian3.magnitude(planeMovement);
-          if (movementMagnitude > 0.1) { // Only if moved more than 0.1 meters
-            // Move camera by the same amount
+        if (currentPlanePosition) {
+          // First frame: Set up top-down view
+          if (!isInitialized) {
+            lastPlanePosition = currentPlanePosition.clone();
+            
+            // Get plane's cartographic position
+            const ellipsoid = viewer.scene.globe.ellipsoid;
+            const planeCartographic = ellipsoid.cartesianToCartographic(currentPlanePosition);
+            
+            // Position camera directly above the plane
+            const cameraHeight = 100000; // 100km above the plane
+            const cameraCartographic = new Cartographic(
+              planeCartographic.longitude,
+              planeCartographic.latitude,
+              planeCartographic.height + cameraHeight
+            );
+            
+            const cameraPosition = ellipsoid.cartographicToCartesian(cameraCartographic);
+            
+            // Set camera to look straight down
+            viewer.camera.position = cameraPosition;
+            viewer.camera.direction = Cartesian3.normalize(
+              Cartesian3.subtract(currentPlanePosition, cameraPosition, new Cartesian3()),
+              new Cartesian3()
+            );
+            
+            // Set up vector to point north
+            viewer.camera.up = Cartesian3.normalize(
+              new Cartesian3(-Math.sin(planeCartographic.longitude), Math.cos(planeCartographic.longitude), 0),
+              new Cartesian3()
+            );
+            
+            viewer.camera.right = Cartesian3.cross(
+              viewer.camera.direction,
+              viewer.camera.up,
+              new Cartesian3()
+            );
+            
+            isInitialized = true;
+          } else if (lastPlanePosition) {
+            // Calculate how much the plane moved
+            const planeMovement = Cartesian3.subtract(
+              currentPlanePosition, 
+              lastPlanePosition, 
+              new Cartesian3()
+            );
+            
+            // Move camera by the same amount (follow plane's position)
+            // But keep the user's camera orientation (direction, up, right)
             const newCameraPos = Cartesian3.add(
               viewer.camera.position, 
               planeMovement, 
               new Cartesian3()
             );
+            
+            // Only update position, preserve user's rotation
             viewer.camera.position = newCameraPos;
+            
+            // Update the last plane position
+            lastPlanePosition = currentPlanePosition.clone();
           }
-        }
-        
-        // Update last position
-        if (currentPlanePosition) {
-          lastPlanePosition = Cartesian3.clone(currentPlanePosition);
         }
         
         // Continue animation
@@ -248,6 +256,9 @@ export const CesiumMap: React.FC<CesiumMapProps> = ({ selectedFlightId }) => {
       
       followAnimation();
     };
+    
+    // Start following immediately
+    startFollowing();
     
     return () => {
       isFollowingActive = false;

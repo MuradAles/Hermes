@@ -96,7 +96,7 @@ export const AnimatedFlight: React.FC<AnimatedFlightProps> = React.memo(({ fligh
     viewer.clock.startTime = startTime.clone();
     viewer.clock.stopTime = stopTime.clone();
     viewer.clock.currentTime = startTime.clone();
-    viewer.clock.clockRange = 2; // LOOP_STOP - stop at end
+    viewer.clock.clockRange = 1; // CLAMPED - stop at end without looping
     viewer.clock.multiplier = 1; // Default speed
     viewer.clock.shouldAnimate = false; // Start paused
     
