@@ -7,6 +7,7 @@ import OpenAI from "openai";
 import * as logger from "firebase-functions/logger";
 import * as dotenv from "dotenv";
 import {monitorAllFlights} from "./weatherMonitor";
+import {sendWeatherAlertEmail} from "./emailService";
 
 // Load environment variables from .env file
 dotenv.config();
@@ -288,6 +289,7 @@ export const hourlyWeatherMonitoring = onSchedule(
     timeZone: "America/New_York", // Adjust to your timezone
     retryCount: 3,
     memory: "256MiB",
+    secrets: ["GMAIL_USER", "GMAIL_APP_PASSWORD"],
   },
   async (event) => {
     logger.info("Hourly weather monitoring triggered", {time: event.scheduleTime});
@@ -309,6 +311,7 @@ export const hourlyWeatherMonitoring = onSchedule(
 export const triggerWeatherCheck = onCall(
   {
     cors: ["http://localhost:5174", "http://localhost:5173", "https://hermes-path.web.app", "https://hermes-path.firebaseapp.com"],
+    secrets: ["GMAIL_USER", "GMAIL_APP_PASSWORD"],
   },
   async (request) => {
     // Require authentication
@@ -324,6 +327,170 @@ export const triggerWeatherCheck = onCall(
     } catch (error: any) {
       logger.error("Manual weather check failed:", error);
       throw new HttpsError("internal", `Weather check failed: ${error.message}`);
+    }
+  }
+);
+
+/**
+ * Send weather alert notifications to selected students (admin function)
+ * Accepts array of flight IDs and sends emails to the students
+ */
+export const sendNotificationsToStudents = onCall(
+  {
+    cors: ["http://localhost:5174", "http://localhost:5173", "https://hermes-path.web.app", "https://hermes-path.firebaseapp.com"],
+    secrets: ["GMAIL_USER", "GMAIL_APP_PASSWORD"],
+  },
+  async (request) => {
+    // Require authentication
+    if (!request.auth) {
+      throw new HttpsError("unauthenticated", "Must be logged in to send notifications");
+    }
+
+    const {flightIds} = request.data;
+
+    if (!flightIds || !Array.isArray(flightIds) || flightIds.length === 0) {
+      throw new HttpsError(
+        "invalid-argument",
+        "flightIds array is required and must not be empty"
+      );
+    }
+
+    logger.info(`Sending notifications to ${flightIds.length} student(s) for flights:`, flightIds);
+
+    const db = admin.firestore();
+    const results: Array<{flightId: string; success: boolean; error?: string}> = [];
+
+    try {
+      // Process each flight
+      for (const flightId of flightIds) {
+        try {
+          // Get flight document
+          const flightDoc = await db.collection("flights").doc(flightId).get();
+          
+          if (!flightDoc.exists) {
+            results.push({
+              flightId,
+              success: false,
+              error: "Flight not found",
+            });
+            continue;
+          }
+
+          const flight = flightDoc.data();
+          if (!flight) {
+            results.push({
+              flightId,
+              success: false,
+              error: "Flight data is empty",
+            });
+            continue;
+          }
+
+          // Get user email from Firestore
+          const userDoc = await db.collection("users").doc(flight.userId).get();
+          if (!userDoc.exists) {
+            results.push({
+              flightId,
+              success: false,
+              error: "User not found",
+            });
+            continue;
+          }
+
+          const userData = userDoc.data();
+          const userEmail = userData?.email;
+          const userName = userData?.displayName || flight.studentName || "there";
+
+          if (!userEmail) {
+            results.push({
+              flightId,
+              success: false,
+              error: "User has no email",
+            });
+            continue;
+          }
+
+          // Extract issues from weather data
+          const issues: string[] = [];
+          if (flight.weatherData && Array.isArray(flight.weatherData)) {
+            flight.weatherData.forEach((checkpoint: any) => {
+              if (checkpoint.reason && checkpoint.reason !== "Conditions acceptable") {
+                issues.push(checkpoint.reason);
+              }
+            });
+          }
+          const uniqueIssues = Array.from(new Set(issues));
+
+          // Format scheduled time
+          const scheduledTime = flight.scheduledTime?.toDate 
+            ? flight.scheduledTime.toDate() 
+            : flight.scheduledTime instanceof Date 
+              ? flight.scheduledTime 
+              : new Date(flight.scheduledTime);
+
+          // Send email
+          await sendWeatherAlertEmail(
+            userEmail,
+            userName,
+            {
+              flightId: flightDoc.id,
+              departure: flight.departure?.code || flight.departure?.name || "Unknown",
+              arrival: flight.arrival?.code || flight.arrival?.name || "Unknown",
+              scheduledTime: scheduledTime.toISOString(),
+              safetyStatus: flight.safetyStatus || "dangerous",
+              safetyScore: flight.weatherData?.[0]?.safetyScore || 0,
+              issues: uniqueIssues.length > 0 ? uniqueIssues : ["Weather conditions may affect your flight"],
+              trainingLevel: flight.trainingLevel || "level-1",
+            }
+          );
+
+          // Update flight document with email sent timestamp
+          await flightDoc.ref.update({
+            emailSentAt: admin.firestore.FieldValue.serverTimestamp(),
+          });
+
+          results.push({
+            flightId,
+            success: true,
+          });
+
+          logger.info(`Notification sent successfully to ${userEmail} for flight ${flightId}`);
+        } catch (error: any) {
+          logger.error(`Failed to send notification for flight ${flightId}:`, error);
+          
+          // Provide more helpful error messages
+          let errorMessage = error.message || "Unknown error";
+          if (error.code === "EAUTH" || errorMessage.includes("BadCredentials")) {
+            errorMessage = "Gmail authentication failed. Please check your Gmail App Password. " +
+              "Make sure you're using a 16-character App Password (not your regular Gmail password). " +
+              "Generate one at: https://myaccount.google.com/apppasswords";
+          }
+          
+          results.push({
+            flightId,
+            success: false,
+            error: errorMessage,
+          });
+        }
+      }
+
+      const successCount = results.filter((r) => r.success).length;
+      const failureCount = results.filter((r) => !r.success).length;
+
+      logger.info(
+        `Notification sending complete: ${successCount} succeeded, ${failureCount} failed`
+      );
+
+      return {
+        success: true,
+        total: flightIds.length,
+        succeeded: successCount,
+        failed: failureCount,
+        results,
+      };
+    } catch (error: any) {
+      logger.error("Error sending notifications:", error);
+      throw new HttpsError("internal", `Failed to send notifications: ${error.message}`);
     }
   }
 );

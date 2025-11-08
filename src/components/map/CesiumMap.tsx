@@ -25,10 +25,11 @@ import 'cesium/Build/Cesium/Widgets/widgets.css';
 import './CesiumMap.css';
 
 interface CesiumMapProps {
-  selectedFlightId: string | null;
+  selectedFlightId?: string | null;
+  allFlights?: Flight[]; // For admin mode - show all flights
 }
 
-export const CesiumMap: React.FC<CesiumMapProps> = ({ selectedFlightId }) => {
+export const CesiumMap: React.FC<CesiumMapProps> = ({ selectedFlightId, allFlights }) => {
   const { user } = useAuth();
   const { flights } = useFlights(user?.uid || '');
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -39,7 +40,10 @@ export const CesiumMap: React.FC<CesiumMapProps> = ({ selectedFlightId }) => {
   const [initialCameraSet, setInitialCameraSet] = useState(false);
   const [selectedPlaneModel, setSelectedPlaneModel] = useState(AVAILABLE_PLANES[0].uri);
   
-  const selectedFlight = flights.find(f => f.id === selectedFlightId);
+  // Admin mode: use allFlights if provided, otherwise use normal user flights
+  const flightsToDisplay = allFlights || flights;
+  const selectedFlight = flightsToDisplay.find(f => f.id === selectedFlightId);
+  const isAdminMode = !!allFlights; // Admin mode when allFlights prop is provided
 
   // Memoize contextOptions to prevent Viewer recreation (read-only prop)
   const contextOptions = useMemo(() => ({
@@ -507,10 +511,69 @@ export const CesiumMap: React.FC<CesiumMapProps> = ({ selectedFlightId }) => {
     return () => clearInterval(checkViewer);
   }, []);
 
-  // Initial camera setup when flight is first selected
+  // Initial camera setup for admin mode (show all flights)
   useEffect(() => {
-    if (selectedFlightId && viewerRef.current?.cesiumElement && !initialCameraSet) {
-      const flight = flights.find(f => f.id === selectedFlightId);
+    if (isAdminMode && flightsToDisplay.length > 0 && viewerRef.current?.cesiumElement && !initialCameraSet) {
+      const viewer = viewerRef.current.cesiumElement;
+      
+      // Ensure viewer is fully initialized
+      if (!viewer.scene) return;
+      
+      // Collect all coordinates from all flights
+      const allLons: number[] = [];
+      const allLats: number[] = [];
+      
+      flightsToDisplay.forEach(flight => {
+        allLons.push(flight.departure.lon, flight.arrival.lon);
+        allLats.push(flight.departure.lat, flight.arrival.lat);
+        
+        // Also include waypoints for more accurate bounding box
+        flight.path.waypoints.forEach(waypoint => {
+          allLons.push(waypoint.lon);
+          allLats.push(waypoint.lat);
+        });
+      });
+      
+      // Calculate bounding box
+      const minLon = Math.min(...allLons);
+      const maxLon = Math.max(...allLons);
+      const minLat = Math.min(...allLats);
+      const maxLat = Math.max(...allLats);
+      
+      // Calculate center
+      const centerLon = (minLon + maxLon) / 2;
+      const centerLat = (minLat + maxLat) / 2;
+      
+      // Calculate distance to determine view height
+      const lonRange = (maxLon - minLon) * 111000 * Math.cos(CesiumMath.toRadians(centerLat));
+      const latRange = (maxLat - minLat) * 111000;
+      const maxRange = Math.max(lonRange, latRange);
+      
+      // Set view height to show all flights with some padding
+      const viewHeight = Math.max(maxRange * 1.5, 2000000); // At least 2000km high
+      
+      viewer.camera.flyTo({
+        destination: Cartesian3.fromDegrees(
+          centerLon,
+          centerLat,
+          viewHeight
+        ),
+        duration: 2,
+        orientation: {
+          heading: 0,
+          pitch: CesiumMath.toRadians(-90), // Top-down view
+          roll: 0
+        }
+      });
+      
+      setInitialCameraSet(true);
+    }
+  }, [isAdminMode, flightsToDisplay, initialCameraSet]);
+
+  // Initial camera setup when flight is first selected (normal mode)
+  useEffect(() => {
+    if (!isAdminMode && selectedFlightId && viewerRef.current?.cesiumElement && !initialCameraSet) {
+      const flight = flightsToDisplay.find(f => f.id === selectedFlightId);
       if (flight) {
         const viewer = viewerRef.current.cesiumElement;
         
@@ -552,7 +615,7 @@ export const CesiumMap: React.FC<CesiumMapProps> = ({ selectedFlightId }) => {
     if (selectedFlightId) {
       setInitialCameraSet(false);
     }
-  }, [selectedFlightId, flights, initialCameraSet]);
+  }, [isAdminMode, selectedFlightId, flightsToDisplay, initialCameraSet]);
 
   // Follow plane with smooth tracking and full camera control
   useEffect(() => {
@@ -853,38 +916,56 @@ export const CesiumMap: React.FC<CesiumMapProps> = ({ selectedFlightId }) => {
         selectionIndicator={false}
         contextOptions={contextOptions}
       >
-        {/* Only render selected flight */}
-        {selectedFlight && (
-          <FlightPathEntity 
-            key={`path-${selectedFlight.id}`} 
-            flight={selectedFlight}
-            isSelected={true}
-          />
-        )}
-        
-        {selectedFlight && (
-          <AirportMarkers key={`airports-${selectedFlight.id}`} flight={selectedFlight} />
-        )}
-        
-        {selectedFlight && (
-          <AnimatedFlight 
-            key={`animated-${selectedFlight.id}`}
-            flight={selectedFlight}
-            viewer={viewerRef.current?.cesiumElement}
-            isPlaying={isPlaying}
-            modelUri={selectedPlaneModel}
-          />
+        {/* Admin mode: render all flights */}
+        {isAdminMode ? (
+          <>
+            {flightsToDisplay.map(flight => (
+              <React.Fragment key={flight.id}>
+                <FlightPathEntity 
+                  flight={flight}
+                  isSelected={false}
+                />
+                <AirportMarkers flight={flight} />
+              </React.Fragment>
+            ))}
+          </>
+        ) : (
+          <>
+            {/* Normal mode: only render selected flight */}
+            {selectedFlight && (
+              <FlightPathEntity 
+                key={`path-${selectedFlight.id}`} 
+                flight={selectedFlight}
+                isSelected={true}
+              />
+            )}
+            
+            {selectedFlight && (
+              <AirportMarkers key={`airports-${selectedFlight.id}`} flight={selectedFlight} />
+            )}
+            
+            {selectedFlight && (
+              <AnimatedFlight 
+                key={`animated-${selectedFlight.id}`}
+                flight={selectedFlight}
+                viewer={viewerRef.current?.cesiumElement}
+                isPlaying={isPlaying}
+                modelUri={selectedPlaneModel}
+              />
+            )}
+          </>
         )}
       </Viewer>
       
-      {selectedFlight && (
+      {/* Only show controls in normal mode (not admin mode) */}
+      {!isAdminMode && selectedFlight && (
         <PlaneSelector
           selectedPlane={selectedPlaneModel}
           onPlaneChange={setSelectedPlaneModel}
         />
       )}
       
-      {selectedFlight && viewerRef.current && (
+      {!isAdminMode && selectedFlight && viewerRef.current && (
         <AltitudeIndicator 
           viewer={viewerRef.current.cesiumElement}
           isPlaying={isPlaying}
@@ -892,7 +973,7 @@ export const CesiumMap: React.FC<CesiumMapProps> = ({ selectedFlightId }) => {
         />
       )}
       
-      {selectedFlight && viewerRef.current && (
+      {!isAdminMode && selectedFlight && viewerRef.current && (
         <FlightControls
           viewer={viewerRef.current.cesiumElement}
           isPlaying={isPlaying}

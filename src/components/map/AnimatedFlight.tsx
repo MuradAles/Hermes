@@ -107,9 +107,10 @@ export const AnimatedFlight: React.FC<AnimatedFlightProps> = React.memo(({ fligh
         const altitudeOffsetFeet = 300; // Fly 150 feet above the path line
         const altitudeMeters = (altitude + altitudeOffsetFeet) * 0.3048; // Convert feet to meters
         
-        // Time for this sample (assuming 450 knots average speed for faster animation)
-        const totalDistance = flight.path.totalDistance;
-        const timeSeconds = (overallProgress * totalDistance / 450) * 3600; // NM / knots * 3600 sec/hr
+        // Time for this sample - use the actual estimatedDuration from flight path (120 knots)
+        // estimatedDuration is in minutes, convert to seconds and apply progress
+        const totalDurationSeconds = flight.path.estimatedDuration * 60; // Convert minutes to seconds
+        const timeSeconds = overallProgress * totalDurationSeconds;
         const time = JulianDate.addSeconds(
           JulianDate.fromDate(new Date()), 
           timeSeconds, 
@@ -122,14 +123,15 @@ export const AnimatedFlight: React.FC<AnimatedFlightProps> = React.memo(({ fligh
     }
     
     return prop;
-  }, [flight.path.waypoints, flight.path.totalDistance]);
+  }, [flight.path.waypoints, flight.path.estimatedDuration]);
 
   // Initialize clock only once per flight
   useEffect(() => {
     if (!viewer || clockInitializedRef.current) return;
     
-    const totalDistance = flight.path.totalDistance;
-    const totalDurationSeconds = (totalDistance / 450) * 3600; // Match speed from position calculation
+    // Use the actual estimatedDuration from flight path (matches schedule display)
+    // estimatedDuration is in minutes, convert to seconds
+    const totalDurationSeconds = flight.path.estimatedDuration * 60;
     const startTime = JulianDate.fromDate(new Date());
     const stopTime = JulianDate.addSeconds(startTime, totalDurationSeconds, new JulianDate());
     
@@ -147,7 +149,7 @@ export const AnimatedFlight: React.FC<AnimatedFlightProps> = React.memo(({ fligh
     return () => {
       clockInitializedRef.current = false;
     };
-  }, [viewer, flight.id, flight.path.totalDistance]);
+  }, [viewer, flight.id, flight.path.estimatedDuration]);
 
   // Control animation based on play state (separate effect)
   useEffect(() => {
@@ -183,8 +185,9 @@ export const AnimatedFlight: React.FC<AnimatedFlightProps> = React.memo(({ fligh
         const additionalOffsetFeet = 25; // Additional 200 feet below the path line
         const altitudeMeters = (altitude - additionalOffsetFeet) * 0.3048; // Convert feet to meters, subtract offset
         
-        const totalDistance = flight.path.totalDistance;
-        const timeSeconds = (overallProgress * totalDistance / 450) * 3600;
+        // Use the actual estimatedDuration from flight path (matches schedule display)
+        const totalDurationSeconds = flight.path.estimatedDuration * 60; // Convert minutes to seconds
+        const timeSeconds = overallProgress * totalDurationSeconds;
         const time = JulianDate.addSeconds(
           JulianDate.fromDate(new Date()), 
           timeSeconds, 
@@ -197,7 +200,7 @@ export const AnimatedFlight: React.FC<AnimatedFlightProps> = React.memo(({ fligh
     }
     
     return prop;
-  }, [flight.path.waypoints, flight.path.totalDistance, cruiseAltitude, groundLevel]);
+  }, [flight.path.waypoints, flight.path.estimatedDuration, cruiseAltitude, groundLevel]);
 
   // ALWAYS render the entity - keep it visible when paused!
   return (

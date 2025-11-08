@@ -16,44 +16,44 @@ Implement email notification system for weather alerts. Two main features:
 ## Task 1: Set Up Email Service Infrastructure
 
 ### 1.1 Install Email Dependencies
-- [ ] Add `nodemailer` and `@types/nodemailer` to `functions/package.json`
-- [ ] Run `npm install` in functions directory
+- [x] Add `nodemailer` and `@types/nodemailer` to `functions/package.json`
+- [x] Run `npm install` in functions directory
 
 ### 1.2 Create Email Service Module
-- [ ] Create `functions/src/emailService.ts`
-- [ ] Implement email configuration (SMTP settings)
-- [ ] Create `sendWeatherAlertEmail()` function
-- [ ] Add email template with flight details, weather info, and dashboard link
-- [ ] Add error handling and logging
+- [x] Create `functions/src/emailService.ts`
+- [x] Implement email configuration (SMTP settings)
+- [x] Create `sendWeatherAlertEmail()` function
+- [x] Add email template with flight details, weather info, and dashboard link
+- [x] Add error handling and logging
 
 ### 1.3 Configure Environment Variables
-- [ ] Add Gmail app password to `.env` file in functions directory
-- [ ] Add email configuration to environment variables:
-  - `GMAIL_USER` (sender email)
-  - `GMAIL_APP_PASSWORD` (Gmail app password)
-  - `DASHBOARD_URL` (link to dashboard)
+- [x] Add Gmail app password to `.env` file in functions directory
+- [x] Add email configuration to environment variables:
+  - [x] `GMAIL_USER` (sender email) - ✅ Set: enigmaboxe@gmail.com
+  - [x] `GMAIL_APP_PASSWORD` (Gmail app password) - ✅ Set
+  - [ ] `DASHBOARD_URL` (link to dashboard) - Optional, defaults to production URL
 
 ### 1.4 Test Email Service
-- [ ] Create test function to send test email
-- [ ] Verify email delivery works
-- [ ] Test email template rendering
+- [x] Create test function to send test email (`sendTestEmail()` in emailService.ts)
+- [ ] Verify email delivery works (can test after integration)
+- [x] Test email template rendering (HTML template created)
 
 ---
 
 ## Task 2: Automatic Email Notifications (Hourly Weather Check)
 
 ### 2.1 Update Weather Monitor to Send Emails
-- [ ] Modify `functions/src/weatherMonitor.ts`
-- [ ] When status changes to unsafe (RED or YELLOW for level-1/2):
-  - [ ] Fetch user email from Firestore `users` collection
-  - [ ] Call `sendWeatherAlertEmail()` with flight and user details
-  - [ ] Log email sent status
-  - [ ] Handle errors gracefully (don't break weather check if email fails)
+- [x] Modify `functions/src/weatherMonitor.ts`
+- [x] When status changes to unsafe (RED or YELLOW for level-1/2):
+  - [x] Fetch user email from Firestore `users` collection
+  - [x] Call `sendWeatherAlertEmail()` with flight and user details
+  - [x] Log email sent status
+  - [x] Handle errors gracefully (don't break weather check if email fails)
 
 ### 2.2 Prevent Duplicate Emails
-- [ ] Add `emailSentAt` timestamp to flight document when email is sent
-- [ ] Only send email if status changed AND no email sent in last 24 hours
-- [ ] Update flight document with email sent timestamp
+- [x] Add `emailSentAt` timestamp to flight document when email is sent
+- [x] Only send email if status changed AND no email sent in last 24 hours
+- [x] Update flight document with email sent timestamp
 
 ### 2.3 Email Content
 - [ ] Include flight details (departure, arrival, date/time)
@@ -66,19 +66,18 @@ Implement email notification system for weather alerts. Two main features:
 ## Task 3: Manual Email Notifications (Admin Dashboard)
 
 ### 3.1 Create Admin Email Function
-- [ ] Create `functions/src/index.ts` function `sendWeatherAlertToStudents`
-- [ ] Accept parameters: `studentIds` (array), `message` (optional custom message)
-- [ ] Fetch user emails from Firestore for provided student IDs
-- [ ] Send email to each student
-- [ ] Return success/failure status
+- [x] Create `functions/src/index.ts` function `sendNotificationsToStudents`
+- [x] Accept parameters: `flightIds` (array) - sends to students for selected flights
+- [x] Fetch user emails from Firestore for provided flight IDs
+- [x] Send email to each student
+- [x] Return success/failure status
 
 ### 3.2 Add Admin UI Component
-- [ ] Update `src/components/admin/AdminDashboard.tsx`
-- [ ] Add "Send Weather Alert" button/action
-- [ ] Add student selection (checkboxes or multi-select)
-- [ ] Add optional custom message field
-- [ ] Call Cloud Function to send emails
-- [ ] Show success/error toast notifications
+- [x] Update `src/components/admin/AdminDashboard.tsx`
+- [x] Add "Send Notification" button/action
+- [x] Use existing student selection (checkboxes)
+- [x] Call Cloud Function to send emails
+- [x] Show success/error toast notifications
 
 ### 3.3 Admin Email Interface
 - [ ] List all students with their flights

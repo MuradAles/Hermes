@@ -664,7 +664,7 @@ export const FlightForm: React.FC<FlightFormProps> = ({ user, onClose, onPathPre
             </button>
             
             {!weatherChecked ? (
-              <button type="submit" disabled={loading} className="btn-primary">
+              <button type="submit" disabled={loading} className="btn-weather-check">
                 {loading ? 'Checking Weather...' : '🌤️ Check Weather'}
               </button>
             ) : (

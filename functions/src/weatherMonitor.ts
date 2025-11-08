@@ -1,6 +1,7 @@
 import * as admin from "firebase-admin";
 import * as logger from "firebase-functions/logger";
 import axios from "axios";
+import { sendWeatherAlertEmail } from "./emailService";
 
 interface WeatherCheckpoint {
   location: { lat: number; lon: number };
@@ -94,6 +95,11 @@ async function checkFlightWeather(
     }
 
     await flightDoc.ref.update(updates);
+
+    // Send email notification if status changed to unsafe and no email sent in last 24 hours
+    if (statusChanged && (safetyColor === "RED" || (safetyColor === "YELLOW" && (flight.trainingLevel === "level-1" || flight.trainingLevel === "level-2")))) {
+      await sendEmailNotificationIfNeeded(flightDoc, flight, overallSafety, checkpoints);
+    }
 
     logger.info(`Successfully updated flight ${flightId}`);
   } catch (error: any) {
@@ -323,6 +329,93 @@ function getSafetyColor(status: string, trainingLevel: string): string {
 
   return "YELLOW";
 }
+
+/**
+ * Send email notification if needed (not sent in last 24 hours)
+ */
+async function sendEmailNotificationIfNeeded(
+  flightDoc: admin.firestore.QueryDocumentSnapshot,
+  flight: any,
+  overallSafety: { status: string; score: number },
+  checkpoints: WeatherCheckpoint[]
+): Promise<void> {
+  try {
+    const db = admin.firestore();
+    const flightData = flightDoc.data();
+    
+    // Check if email was sent in last 24 hours
+    const emailSentAt = flightData.emailSentAt;
+    if (emailSentAt) {
+      const emailSentTime = emailSentAt.toDate ? emailSentAt.toDate() : new Date(emailSentAt);
+      const hoursSinceEmail = (Date.now() - emailSentTime.getTime()) / (1000 * 60 * 60);
+      
+      if (hoursSinceEmail < 24) {
+        logger.info(`Email already sent for flight ${flightDoc.id} ${hoursSinceEmail.toFixed(1)} hours ago, skipping`);
+        return;
+      }
+    }
+
+    // Get user email from Firestore
+    const userDoc = await db.collection("users").doc(flight.userId).get();
+    if (!userDoc.exists) {
+      logger.warn(`User ${flight.userId} not found, cannot send email`);
+      return;
+    }
+
+    const userData = userDoc.data();
+    const userEmail = userData?.email;
+    const userName = userData?.displayName || flight.studentName || "there";
+
+    if (!userEmail) {
+      logger.warn(`User ${flight.userId} has no email, cannot send notification`);
+      return;
+    }
+
+    // Extract issues from checkpoints
+    const issues: string[] = [];
+    checkpoints.forEach((checkpoint) => {
+      if (checkpoint.reason && checkpoint.reason !== "Conditions acceptable") {
+        issues.push(checkpoint.reason);
+      }
+    });
+    // Remove duplicates
+    const uniqueIssues = Array.from(new Set(issues));
+
+    // Format scheduled time
+    const scheduledTime = flight.scheduledTime?.toDate 
+      ? flight.scheduledTime.toDate() 
+      : flight.scheduledTime instanceof Date 
+        ? flight.scheduledTime 
+        : new Date(flight.scheduledTime);
+
+    // Send email
+    await sendWeatherAlertEmail(
+      userEmail,
+      userName,
+      {
+        flightId: flightDoc.id,
+        departure: flight.departure.code || flight.departure.name,
+        arrival: flight.arrival.code || flight.arrival.name,
+        scheduledTime: scheduledTime.toISOString(),
+        safetyStatus: overallSafety.status,
+        safetyScore: Math.round(overallSafety.score),
+        issues: uniqueIssues,
+        trainingLevel: flight.trainingLevel,
+      }
+    );
+
+    // Update flight document with email sent timestamp
+    await flightDoc.ref.update({
+      emailSentAt: admin.firestore.FieldValue.serverTimestamp(),
+    });
+
+    logger.info(`Email notification sent to ${userEmail} for flight ${flightDoc.id}`);
+  } catch (error: any) {
+    logger.error(`Failed to send email notification for flight ${flightDoc.id}:`, error);
+    // Don't throw - email failure shouldn't break weather monitoring
+  }
+}
+
 
 
 
