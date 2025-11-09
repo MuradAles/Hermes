@@ -1,6 +1,6 @@
-import { collection, query, where, orderBy, onSnapshot, doc, updateDoc, Timestamp, addDoc, getDocs, deleteDoc } from 'firebase/firestore';
+import { collection, query, where, orderBy, onSnapshot, doc, updateDoc, Timestamp, getDocs, deleteDoc } from 'firebase/firestore';
 import { db, auth } from './firebase';
-import type { Notification, NotificationType } from '../types/Notification';
+import type { Notification } from '../types/Notification';
 
 export const notificationService = {
   /**

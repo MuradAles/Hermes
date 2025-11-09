@@ -53,11 +53,14 @@ export const AdminDashboard: React.FC = () => {
   };
 
   const isFlightPassed = (flight: Flight): boolean => {
-    const scheduledTime = flight.scheduledTime?.toDate 
-      ? flight.scheduledTime.toDate() 
-      : flight.scheduledTime instanceof Date 
-        ? flight.scheduledTime 
-        : new Date(flight.scheduledTime);
+    let scheduledTime: Date;
+    if (flight.scheduledTime && typeof flight.scheduledTime === 'object' && 'toDate' in flight.scheduledTime) {
+      scheduledTime = (flight.scheduledTime as any).toDate();
+    } else if (flight.scheduledTime instanceof Date) {
+      scheduledTime = flight.scheduledTime;
+    } else {
+      scheduledTime = new Date(flight.scheduledTime);
+    }
     return scheduledTime < new Date() && flight.status === 'scheduled';
   };
 
@@ -226,24 +229,6 @@ export const AdminDashboard: React.FC = () => {
       case 'dangerous': return '#ef4444';
       default: return '#6b7280';
     }
-  };
-
-  const getStatusBadge = (status: string) => {
-    const colors: Record<string, string> = {
-      'scheduled': '#60a5fa',
-      'completed': '#10b981',
-      'cancelled': '#ef4444',
-      'rescheduled': '#f59e0b',
-    };
-
-    return (
-      <span 
-        className="status-badge" 
-        style={{ background: colors[status] || '#6b7280' }}
-      >
-        {status}
-      </span>
-    );
   };
 
   const filteredFlights = getFilteredFlights();

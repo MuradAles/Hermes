@@ -1,6 +1,6 @@
 import React, { useMemo } from 'react';
 import { Entity } from 'resium';
-import { Cartesian3, Color, Cartesian2 } from 'cesium';
+import { Cartesian3 } from 'cesium';
 import type { Flight } from '../../types';
 
 interface AirportMarkersProps {

@@ -1,4 +1,4 @@
-import { collection, addDoc, query, where, orderBy, onSnapshot, deleteDoc, doc, Timestamp, updateDoc, getDocs } from 'firebase/firestore';
+import { collection, addDoc, query, where, orderBy, onSnapshot, doc, Timestamp, updateDoc } from 'firebase/firestore';
 import { db } from './firebase';
 import type { Flight } from '../types';
 

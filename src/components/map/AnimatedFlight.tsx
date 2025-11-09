@@ -82,6 +82,20 @@ export const AnimatedFlight: React.FC<AnimatedFlightProps> = React.memo(({ fligh
     const waypoints = flight.path.waypoints;
     const numWaypoints = waypoints.length;
     
+    // Handle edge cases: no waypoints or only one waypoint
+    if (numWaypoints === 0) {
+      return prop; // Return empty property
+    }
+    if (numWaypoints === 1) {
+      // Single waypoint: just add one sample at that location
+      const waypoint = waypoints[0];
+      const altitudeMeters = (cruiseAltitude + 300) * 0.3048; // Convert feet to meters
+      const time = JulianDate.fromDate(new Date());
+      const position = Cartesian3.fromDegrees(waypoint.lon, waypoint.lat, altitudeMeters);
+      prop.addSample(time, position);
+      return prop;
+    }
+    
     // Create more samples for smoother animation
     // Interpolate between waypoints to create additional samples
     // Reduced from 10 to 5 for better performance while maintaining smoothness
@@ -100,7 +114,8 @@ export const AnimatedFlight: React.FC<AnimatedFlightProps> = React.memo(({ fligh
         const lat = currentWaypoint.lat + (nextWaypoint.lat - currentWaypoint.lat) * segmentProgress;
         
         // Calculate overall progress through the flight (0 = start, 1 = end)
-        const overallProgress = (i + segmentProgress) / (numWaypoints - 1);
+        // Use Math.max to prevent division by zero
+        const overallProgress = (i + segmentProgress) / Math.max(1, numWaypoints - 1);
         
         // Calculate altitude using same formula as FlightPathEntity, but add small offset to fly above the line
         const altitude = calculateAltitude(overallProgress, cruiseAltitude, groundLevel);
@@ -168,6 +183,21 @@ export const AnimatedFlight: React.FC<AnimatedFlightProps> = React.memo(({ fligh
     
     const waypoints = flight.path.waypoints;
     const numWaypoints = waypoints.length;
+    
+    // Handle edge cases: no waypoints or only one waypoint
+    if (numWaypoints === 0) {
+      return prop; // Return empty property
+    }
+    if (numWaypoints === 1) {
+      // Single waypoint: just add one sample at that location
+      const waypoint = waypoints[0];
+      const altitudeMeters = (cruiseAltitude - 25) * 0.3048; // Convert feet to meters
+      const time = JulianDate.fromDate(new Date());
+      const position = Cartesian3.fromDegrees(waypoint.lon, waypoint.lat, altitudeMeters);
+      prop.addSample(time, position);
+      return prop;
+    }
+    
     const samplesPerSegment = 5; // Reduced for performance
     
     for (let i = 0; i < numWaypoints - 1; i++) {
@@ -178,7 +208,8 @@ export const AnimatedFlight: React.FC<AnimatedFlightProps> = React.memo(({ fligh
         const segmentProgress = j / samplesPerSegment;
         const lon = currentWaypoint.lon + (nextWaypoint.lon - currentWaypoint.lon) * segmentProgress;
         const lat = currentWaypoint.lat + (nextWaypoint.lat - currentWaypoint.lat) * segmentProgress;
-        const overallProgress = (i + segmentProgress) / (numWaypoints - 1);
+        // Use Math.max to prevent division by zero
+        const overallProgress = (i + segmentProgress) / Math.max(1, numWaypoints - 1);
         
         // Calculate altitude using same formula as FlightPathEntity (path altitude, with additional offset below)
         const altitude = calculateAltitude(overallProgress, cruiseAltitude, groundLevel);

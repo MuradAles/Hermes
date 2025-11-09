@@ -27,15 +27,6 @@ export const FlightCard: React.FC<{
     }
   };
 
-  const getStatusLabel = (status: string) => {
-    switch (status) {
-      case 'safe': return 'Safe to Fly';
-      case 'marginal': return 'Marginal';
-      case 'dangerous': return 'Dangerous';
-      default: return 'Unknown';
-    }
-  };
-
   const formatDate = (date: any) => {
     // Handle Firestore Timestamp objects
     let d: Date;

@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 import type { User, Flight } from '../../types';
-import { useAuth } from '../../hooks/useAuth';
 import { useFlights } from '../../hooks/useFlights';
 import { useToast } from '../../hooks/useToast';
 import { FlightCard } from '../flights/FlightCard';

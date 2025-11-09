@@ -58,8 +58,10 @@ export const aiService = {
     // Create all weather check promises at once
     const weatherCheckPromises = timeSlotsToCheck.slice(0, maxAttempts).map(async (scheduledTime) => {
       try {
-        // Generate waypoints
-        const waypoints = calculations.generateWaypoints(departure, arrival, 50);
+        // Generate waypoints - create temporary Location objects
+        const departureLoc = { code: '', name: '', lat: departure.lat, lon: departure.lon };
+        const arrivalLoc = { code: '', name: '', lat: arrival.lat, lon: arrival.lon };
+        const waypoints = calculations.generateWaypoints(departureLoc, arrivalLoc, 50);
         const waypointsWithETA = calculations.calculateETAs(waypoints, scheduledTime, 120);
 
         // Check weather
@@ -103,6 +105,7 @@ export const aiService = {
         const issues = r.checkpoints
           .filter(c => c.reason && c.safetyStatus !== 'safe')
           .map(c => c.reason)
+          .filter((v): v is string => v !== undefined) // filter out undefined
           .filter((v, i, a) => a.indexOf(v) === i) // unique
           .slice(0, 3);
         topIssues.push(...issues);
