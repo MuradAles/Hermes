@@ -79,6 +79,7 @@ export const CesiumMap: React.FC<CesiumMapProps> = ({ selectedFlightId, allFligh
   const isAdminMode = !!allFlights; // Admin mode when allFlights prop is provided
 
   // Memoize contextOptions to prevent Viewer recreation (read-only prop)
+  // CRITICAL: This must be stable - any change will recreate the Viewer
   const contextOptions = useMemo(() => ({
     webgl: {
       powerPreference: 'high-performance' as const, // Prefer dedicated GPU
@@ -86,9 +87,11 @@ export const CesiumMap: React.FC<CesiumMapProps> = ({ selectedFlightId, allFligh
       antialias: true, // Keep antialiasing for quality
       depth: true,
       stencil: false,
-      failIfMajorPerformanceCaveat: false
+      failIfMajorPerformanceCaveat: false,
+      preserveDrawingBuffer: false, // Better performance
+      premultipliedAlpha: false
     }
-  }), []); // Empty deps - never changes
+  }), []); // Empty deps - NEVER changes
 
   // Set Cesium Ion access token BEFORE Viewer initializes
   // This ensures Cesium uses Ion World Imagery by default instead of Bing Maps
@@ -106,6 +109,48 @@ export const CesiumMap: React.FC<CesiumMapProps> = ({ selectedFlightId, allFligh
     // We'll handle this by forcing Ion World Imagery in the next effect
   }, []);
 
+  // Handle WebGL context loss (prevents crashes when context is lost)
+  useEffect(() => {
+    let cleanup: (() => void) | null = null;
+    
+    const checkViewer = setInterval(() => {
+      if (!viewerRef.current?.cesiumElement) return;
+      
+      const viewer = viewerRef.current.cesiumElement;
+      const viewerCanvas = viewer.canvas;
+      
+      if (!viewerCanvas) return;
+      
+      clearInterval(checkViewer);
+      
+      const handleContextLost = (event: Event) => {
+        event.preventDefault();
+        console.warn('⚠️ WebGL context lost - attempting to restore...');
+      };
+      
+      const handleContextRestored = () => {
+        console.log('✅ WebGL context restored');
+        // Force a render to refresh the scene
+        if (viewer.scene) {
+          viewer.scene.requestRender();
+        }
+      };
+      
+      viewerCanvas.addEventListener('webglcontextlost', handleContextLost);
+      viewerCanvas.addEventListener('webglcontextrestored', handleContextRestored);
+      
+      cleanup = () => {
+        viewerCanvas.removeEventListener('webglcontextlost', handleContextLost);
+        viewerCanvas.removeEventListener('webglcontextrestored', handleContextRestored);
+      };
+    }, 100);
+    
+    return () => {
+      clearInterval(checkViewer);
+      if (cleanup) cleanup();
+    };
+  }, []);
+
   // Enable GPU acceleration and performance optimizations
   useEffect(() => {
     const checkViewer = setInterval(() => {
@@ -115,6 +160,13 @@ export const CesiumMap: React.FC<CesiumMapProps> = ({ selectedFlightId, allFligh
       
       // Ensure viewer is fully initialized
       if (!viewer.scene) return;
+      
+      // Check if container has valid dimensions (prevents 0 width/height errors)
+      const canvasElement = viewer.canvas;
+      if (!canvasElement || canvasElement.width === 0 || canvasElement.height === 0) {
+        console.warn('⚠️ Canvas has zero dimensions, waiting for resize...');
+        return;
+      }
       
       const scene = viewer.scene;
       
@@ -139,8 +191,7 @@ export const CesiumMap: React.FC<CesiumMapProps> = ({ selectedFlightId, allFligh
       scene.msaaSamples = 2; // 2x MSAA anti-aliasing (smooth edges, better performance than 4x)
       
       // Verify GPU acceleration is working
-      const canvas = viewer.canvas;
-      const gl = canvas.getContext('webgl2') || canvas.getContext('webgl');
+      const gl = canvasElement.getContext('webgl2') || canvasElement.getContext('webgl');
       
       if (!gl) {
         console.error('❌ WebGL NOT AVAILABLE - GPU acceleration failed!');

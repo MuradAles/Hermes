@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useAuth } from '../../hooks/useAuth';
 import type { TrainingLevel } from '../../types';
+import hermesLogo from '../../assets/Hermes.png';
 import './Login.css';
 
 export const Login: React.FC = () => {
@@ -37,57 +38,74 @@ export const Login: React.FC = () => {
   return (
     <div className="login-container">
       <div className="login-card">
-        <h1>Flight Schedule Pro</h1>
-        <p className="login-subtitle">AI-Powered Weather Monitoring & Flight Rescheduling</p>
+        <div className="login-header">
+          <div className="hermes-logo-wrapper">
+            <img src={hermesLogo} alt="Hermes" className="hermes-logo" />
+          </div>
+        </div>
         
-        <form onSubmit={handleSubmit}>
+        <form onSubmit={handleSubmit} className="login-form">
           {error && <div className="error">{error}</div>}
           
           {!isLogin && (
-            <input 
-              type="text" 
-              placeholder="Display Name" 
-              value={displayName} 
-              onChange={(e) => setDisplayName(e.target.value)} 
-              required 
-            />
+            <div className="form-group">
+              <input 
+                type="text" 
+                placeholder="Display Name" 
+                value={displayName} 
+                onChange={(e) => setDisplayName(e.target.value)} 
+                required 
+                className="form-input"
+              />
+            </div>
           )}
           
-          <input 
-            type="email" 
-            placeholder="Email" 
-            value={email} 
-            onChange={(e) => setEmail(e.target.value)} 
-            required 
-          />
+          <div className="form-group">
+            <input 
+              type="email" 
+              placeholder="Email" 
+              value={email} 
+              onChange={(e) => setEmail(e.target.value)} 
+              required 
+              className="form-input"
+            />
+          </div>
           
-          <input 
-            type="password" 
-            placeholder="Password" 
-            value={password} 
-            onChange={(e) => setPassword(e.target.value)} 
-            required 
-          />
+          <div className="form-group">
+            <input 
+              type="password" 
+              placeholder="Password" 
+              value={password} 
+              onChange={(e) => setPassword(e.target.value)} 
+              required 
+              className="form-input"
+            />
+          </div>
           
           {!isLogin && (
-            <div>
-              <label style={{ display: 'block', marginBottom: '8px', color: 'var(--color-text-secondary)', fontSize: '14px' }}>
-                Pilot Certification Level
-              </label>
+            <div className="form-group">
+              <label className="form-label">Pilot Certification Level</label>
               <select 
                 value={trainingLevel} 
                 onChange={(e) => setTrainingLevel(e.target.value as TrainingLevel)}
+                className="form-select"
               >
-                <option value="student-pilot">Student Pilot (Clear skies only, 5mi vis, 3000ft ceiling)</option>
-                <option value="private-pilot">Private Pilot (VFR, 4mi vis, 2500ft ceiling)</option>
-                <option value="commercial-pilot">Commercial Pilot (VFR, 3mi vis, 1000ft ceiling)</option>
-                <option value="instrument-rated">Instrument Rated (IFR capable, IMC acceptable)</option>
+                <option value="student-pilot">Student Pilot</option>
+                <option value="private-pilot">Private Pilot</option>
+                <option value="commercial-pilot">Commercial Pilot</option>
+                <option value="instrument-rated">Instrument Rated</option>
               </select>
+              <p className="form-hint">
+                {trainingLevel === 'student-pilot' && 'Clear skies only, 5mi visibility, 3000ft ceiling'}
+                {trainingLevel === 'private-pilot' && 'VFR conditions, 4mi visibility, 2500ft ceiling'}
+                {trainingLevel === 'commercial-pilot' && 'VFR conditions, 3mi visibility, 1000ft ceiling'}
+                {trainingLevel === 'instrument-rated' && 'IFR capable, IMC acceptable'}
+              </p>
             </div>
           )}
           
           <button type="submit" className="btn-primary">
-            {isLogin ? 'Sign In' : 'Sign Up'}
+            {isLogin ? 'Sign In' : 'Create Account'}
           </button>
         </form>
         
@@ -96,7 +114,7 @@ export const Login: React.FC = () => {
         </div>
         
         <button onClick={handleGoogleSignIn} className="btn-google">
-          <svg width="18" height="18" viewBox="0 0 18 18">
+          <svg width="20" height="20" viewBox="0 0 18 18" xmlns="http://www.w3.org/2000/svg">
             <path fill="#4285F4" d="M16.51 8H8.98v3h4.3c-.18 1-.74 1.48-1.6 2.04v2.01h2.6a7.8 7.8 0 0 0 2.38-5.88c0-.57-.05-.66-.15-1.18z"/>
             <path fill="#34A853" d="M8.98 17c2.16 0 3.97-.72 5.3-1.94l-2.6-2a4.8 4.8 0 0 1-7.18-2.54H1.83v2.07A8 8 0 0 0 8.98 17z"/>
             <path fill="#FBBC05" d="M4.5 10.52a4.8 4.8 0 0 1 0-3.04V5.41H1.83a8 8 0 0 0 0 7.18l2.67-2.07z"/>
@@ -105,8 +123,18 @@ export const Login: React.FC = () => {
           Continue with Google
         </button>
         
-        <p className="toggle-mode" onClick={() => setIsLogin(!isLogin)}>
-          {isLogin ? "Don't have an account? Sign Up" : "Already have an account? Sign In"}
+        <p className="toggle-mode">
+          {isLogin ? (
+            <>
+              Don't have an account?{' '}
+              <span onClick={() => setIsLogin(false)} className="toggle-link">Sign Up</span>
+            </>
+          ) : (
+            <>
+              Already have an account?{' '}
+              <span onClick={() => setIsLogin(true)} className="toggle-link">Sign In</span>
+            </>
+          )}
         </p>
       </div>
     </div>

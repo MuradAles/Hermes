@@ -17,13 +17,17 @@ interface WeatherCheckpoint {
  * Called hourly by scheduled function
  */
 export async function monitorAllFlights(): Promise<void> {
-  logger.info("Starting hourly weather monitoring...");
+  const startTime = new Date();
+  logger.info("=== Starting hourly weather monitoring ===", {
+    startTime: startTime.toISOString(),
+  });
 
   const db = admin.firestore();
   const now = new Date();
 
   try {
     // Query all scheduled flights with future departure times
+    logger.info(`Querying scheduled flights with status='scheduled' and scheduledTime > ${now.toISOString()}`);
     const flightsSnapshot = await db
       .collection("flights")
       .where("status", "==", "scheduled")
@@ -34,9 +38,13 @@ export async function monitorAllFlights(): Promise<void> {
     logger.info(`Found ${flightsSnapshot.size} scheduled flights to check`);
 
     if (flightsSnapshot.empty) {
-      logger.info("No scheduled flights found");
+      logger.info("No scheduled flights found - monitoring complete");
       return;
     }
+
+    // Log flight IDs being checked
+    const flightIds = flightsSnapshot.docs.map(doc => doc.id);
+    logger.info(`Checking weather for flights: ${flightIds.join(", ")}`);
 
     // Process each flight
     const promises = flightsSnapshot.docs.map((doc) =>
@@ -45,9 +53,22 @@ export async function monitorAllFlights(): Promise<void> {
 
     await Promise.all(promises);
 
-    logger.info("Weather monitoring complete");
+    const endTime = new Date();
+    const duration = (endTime.getTime() - startTime.getTime()) / 1000;
+    logger.info("=== Weather monitoring complete ===", {
+      flightsChecked: flightsSnapshot.size,
+      duration: `${duration}s`,
+      endTime: endTime.toISOString(),
+    });
   } catch (error: any) {
-    logger.error("Error in weather monitoring:", error);
+    const endTime = new Date();
+    const duration = (endTime.getTime() - startTime.getTime()) / 1000;
+    logger.error("=== Error in weather monitoring ===", {
+      error: error.message,
+      stack: error.stack,
+      duration: `${duration}s`,
+      endTime: endTime.toISOString(),
+    });
     throw error;
   }
 }

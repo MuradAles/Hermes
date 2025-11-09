@@ -9,8 +9,12 @@ import * as dotenv from "dotenv";
 import {monitorAllFlights} from "./weatherMonitor";
 import {sendWeatherAlertEmail} from "./emailService";
 
-// Load environment variables from .env file
-dotenv.config();
+// Load environment variables from .env file (for local development only)
+// In production, Firebase Functions v2 automatically injects secrets as environment variables
+// when declared in the function config
+if (process.env.FUNCTIONS_EMULATOR === "true" || process.env.NODE_ENV !== "production") {
+  dotenv.config();
+}
 
 admin.initializeApp();
 
@@ -292,13 +296,34 @@ export const hourlyWeatherMonitoring = onSchedule(
     secrets: ["GMAIL_USER", "GMAIL_APP_PASSWORD"],
   },
   async (event) => {
-    logger.info("Hourly weather monitoring triggered", {time: event.scheduleTime});
+    const startTime = new Date();
+    logger.info("=== Hourly weather monitoring triggered ===", {
+      scheduleTime: event.scheduleTime,
+      startTime: startTime.toISOString(),
+    });
+
+    // Check if secrets are available
+    const gmailUser = process.env.GMAIL_USER;
+    const gmailPassword = process.env.GMAIL_APP_PASSWORD;
+    logger.info(`Gmail credentials check - User: ${gmailUser ? 'SET' : 'MISSING'}, Password: ${gmailPassword ? 'SET' : 'MISSING'}`);
 
     try {
       await monitorAllFlights();
-      logger.info("Hourly weather monitoring completed successfully");
+      const endTime = new Date();
+      const duration = (endTime.getTime() - startTime.getTime()) / 1000;
+      logger.info("=== Hourly weather monitoring completed successfully ===", {
+        duration: `${duration}s`,
+        endTime: endTime.toISOString(),
+      });
     } catch (error: any) {
-      logger.error("Hourly weather monitoring failed:", error);
+      const endTime = new Date();
+      const duration = (endTime.getTime() - startTime.getTime()) / 1000;
+      logger.error("=== Hourly weather monitoring failed ===", {
+        error: error.message,
+        stack: error.stack,
+        duration: `${duration}s`,
+        endTime: endTime.toISOString(),
+      });
       throw error;
     }
   }
@@ -332,6 +357,110 @@ export const triggerWeatherCheck = onCall(
 );
 
 /**
+ * Check secrets configuration (diagnostic function)
+ * Verifies that secrets are accessible in production
+ */
+export const checkSecrets = onCall(
+  {
+    cors: ["http://localhost:5174", "http://localhost:5173", "https://hermes-path.web.app", "https://hermes-path.firebaseapp.com"],
+    secrets: ["GMAIL_USER", "GMAIL_APP_PASSWORD"],
+  },
+  async (request) => {
+    // Require authentication
+    if (!request.auth) {
+      throw new HttpsError("unauthenticated", "Must be logged in to check secrets");
+    }
+
+    logger.info("Checking secrets configuration");
+
+    const gmailUser = process.env.GMAIL_USER;
+    const gmailPassword = process.env.GMAIL_APP_PASSWORD;
+    const openweatherKey = process.env.OPENWEATHER_API_KEY;
+    const openaiKey = process.env.OPENAI_API_KEY;
+
+    const secrets = {
+      GMAIL_USER: gmailUser ? "SET" : "MISSING",
+      GMAIL_APP_PASSWORD: gmailPassword ? "SET" : "MISSING",
+      OPENWEATHER_API_KEY: openweatherKey ? "SET" : "MISSING",
+      OPENAI_API_KEY: openaiKey ? "SET" : "MISSING",
+    };
+
+    logger.info("Secrets status:", secrets);
+
+    return {
+      success: true,
+      secrets,
+      environment: process.env.NODE_ENV || "production",
+      note: gmailUser && gmailPassword 
+        ? "Secrets are accessible. If emails still don't work, check function logs for email sending errors."
+        : "Secrets are missing. Redeploy functions after setting secrets: firebase deploy --only functions",
+    };
+  }
+);
+
+/**
+ * Test email sending (diagnostic function)
+ * Useful for testing Gmail configuration
+ */
+export const testEmailSending = onCall(
+  {
+    cors: ["http://localhost:5174", "http://localhost:5173", "https://hermes-path.web.app", "https://hermes-path.firebaseapp.com"],
+    secrets: ["GMAIL_USER", "GMAIL_APP_PASSWORD"],
+  },
+  async (request) => {
+    // Require authentication
+    if (!request.auth) {
+      throw new HttpsError("unauthenticated", "Must be logged in to test email");
+    }
+
+    const {email} = request.data;
+
+    if (!email) {
+      throw new HttpsError(
+        "invalid-argument",
+        "email address is required"
+      );
+    }
+
+    logger.info(`Testing email sending to ${email}`);
+
+    try {
+      // Check if secrets are available
+      const gmailUser = process.env.GMAIL_USER;
+      const gmailPassword = process.env.GMAIL_APP_PASSWORD;
+      
+      logger.info(`Gmail credentials check - User: ${gmailUser ? 'SET (' + gmailUser.substring(0, 3) + '...)' : 'MISSING'}, Password: ${gmailPassword ? 'SET (' + gmailPassword.length + ' chars)' : 'MISSING'}`);
+
+      if (!gmailUser || !gmailPassword) {
+        throw new HttpsError(
+          "failed-precondition",
+          `Gmail credentials not accessible in production. GMAIL_USER: ${gmailUser ? 'SET' : 'MISSING'}, GMAIL_APP_PASSWORD: ${gmailPassword ? 'SET' : 'MISSING'}. ` +
+          `This usually means: 1) Secrets are not set, or 2) Functions need to be redeployed after setting secrets. ` +
+          `Run: firebase deploy --only functions`
+        );
+      }
+
+      // Import test email function
+      const {sendTestEmail} = await import("./emailService.js");
+      await sendTestEmail(email);
+
+      logger.info(`Test email sent successfully to ${email}`);
+      return {
+        success: true,
+        message: `Test email sent successfully to ${email}. Check your inbox!`,
+      };
+    } catch (error: any) {
+      logger.error(`Failed to send test email:`, {
+        error: error.message,
+        code: error.code,
+        stack: error.stack,
+      });
+      throw new HttpsError("internal", `Failed to send test email: ${error.message}`);
+    }
+  }
+);
+
+/**
  * Send weather alert notifications to selected students (admin function)
  * Accepts array of flight IDs and sends emails to the students
  */
@@ -356,6 +485,11 @@ export const sendNotificationsToStudents = onCall(
     }
 
     logger.info(`Sending notifications to ${flightIds.length} student(s) for flights:`, flightIds);
+    
+    // Check if secrets are available
+    const gmailUser = process.env.GMAIL_USER;
+    const gmailPassword = process.env.GMAIL_APP_PASSWORD;
+    logger.info(`Gmail credentials check - User: ${gmailUser ? 'SET' : 'MISSING'}, Password: ${gmailPassword ? 'SET' : 'MISSING'}`);
 
     const db = admin.firestore();
     const results: Array<{flightId: string; success: boolean; error?: string}> = [];
@@ -363,6 +497,7 @@ export const sendNotificationsToStudents = onCall(
     try {
       // Process each flight
       for (const flightId of flightIds) {
+        let userEmail: string | undefined;
         try {
           // Get flight document
           const flightDoc = await db.collection("flights").doc(flightId).get();
@@ -398,7 +533,7 @@ export const sendNotificationsToStudents = onCall(
           }
 
           const userData = userDoc.data();
-          const userEmail = userData?.email;
+          userEmail = userData?.email;
           const userName = userData?.displayName || flight.studentName || "there";
 
           if (!userEmail) {
@@ -473,14 +608,26 @@ export const sendNotificationsToStudents = onCall(
 
           logger.info(`Email and notification sent successfully to ${userEmail} for flight ${flightId}`);
         } catch (error: any) {
-          logger.error(`Failed to send notification for flight ${flightId}:`, error);
+          // userEmail might not be defined if error occurred before fetching user data
+          const errorContext: any = {
+            error: error.message,
+            code: error.code,
+            stack: error.stack,
+            flightId,
+          };
+          if (typeof userEmail !== 'undefined') {
+            errorContext.userEmail = userEmail;
+          }
+          logger.error(`Failed to send notification for flight ${flightId}:`, errorContext);
           
           // Provide more helpful error messages
           let errorMessage = error.message || "Unknown error";
-          if (error.code === "EAUTH" || errorMessage.includes("BadCredentials")) {
+          if (error.code === "EAUTH" || errorMessage.includes("BadCredentials") || errorMessage.includes("Invalid login")) {
             errorMessage = "Gmail authentication failed. Please check your Gmail App Password. " +
               "Make sure you're using a 16-character App Password (not your regular Gmail password). " +
               "Generate one at: https://myaccount.google.com/apppasswords";
+          } else if (errorMessage.includes("Gmail credentials not configured")) {
+            errorMessage = "Gmail credentials are not set up. Please configure GMAIL_USER and GMAIL_APP_PASSWORD secrets in Firebase.";
           }
           
           results.push({

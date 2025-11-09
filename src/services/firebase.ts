@@ -16,5 +16,6 @@ const app = initializeApp(firebaseConfig);
 export const auth = getAuth(app);
 export const db = getFirestore(app);
 export const googleProvider = new GoogleAuthProvider();
-export const functions = getFunctions(app);
+// Initialize functions with explicit region (us-central1) to match deployed functions
+export const functions = getFunctions(app, 'us-central1');
 

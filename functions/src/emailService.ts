@@ -20,10 +20,13 @@ function createTransporter() {
   const gmailUser = process.env.GMAIL_USER;
   const gmailPassword = process.env.GMAIL_APP_PASSWORD;
 
+  logger.info(`Checking Gmail credentials - User: ${gmailUser ? 'SET' : 'MISSING'}, Password: ${gmailPassword ? 'SET' : 'MISSING'}`);
+
   if (!gmailUser || !gmailPassword) {
-    throw new Error(
-      "Gmail credentials not configured. Set GMAIL_USER and GMAIL_APP_PASSWORD environment variables."
-    );
+    const errorMsg = `Gmail credentials not configured. GMAIL_USER: ${gmailUser ? 'SET' : 'MISSING'}, GMAIL_APP_PASSWORD: ${gmailPassword ? 'SET' : 'MISSING'}. ` +
+      `Please set these secrets in Firebase using: firebase functions:secrets:set GMAIL_USER GMAIL_APP_PASSWORD`;
+    logger.error(errorMsg);
+    throw new Error(errorMsg);
   }
 
   // Remove spaces from App Password (Gmail App Passwords can have spaces)
@@ -31,25 +34,28 @@ function createTransporter() {
 
   // Validate App Password format (should be 16 characters)
   if (cleanPassword.length !== 16) {
-    logger.error(
-      `Invalid Gmail App Password format. Expected 16 characters, got ${cleanPassword.length}. ` +
-      `Please generate a new App Password from: https://myaccount.google.com/apppasswords`
-    );
-    throw new Error(
-      `Invalid Gmail App Password format. Expected 16 characters, got ${cleanPassword.length}. ` +
-      `Please check your GMAIL_APP_PASSWORD environment variable.`
-    );
+    const errorMsg = `Invalid Gmail App Password format. Expected 16 characters, got ${cleanPassword.length}. ` +
+      `Please generate a new App Password from: https://myaccount.google.com/apppasswords`;
+    logger.error(errorMsg);
+    throw new Error(errorMsg);
   }
 
   logger.info(`Creating email transporter for ${gmailUser} (password length: ${cleanPassword.length})`);
 
-  return nodemailer.createTransport({
-    service: "gmail",
-    auth: {
-      user: gmailUser,
-      pass: cleanPassword, // This should be a Gmail App Password, not regular password
-    },
-  });
+  try {
+    const transporter = nodemailer.createTransport({
+      service: "gmail",
+      auth: {
+        user: gmailUser,
+        pass: cleanPassword, // This should be a Gmail App Password, not regular password
+      },
+    });
+    logger.info(`Email transporter created successfully`);
+    return transporter;
+  } catch (error: any) {
+    logger.error(`Failed to create email transporter:`, error);
+    throw new Error(`Failed to create email transporter: ${error.message}`);
+  }
 }
 
 /**
@@ -215,16 +221,35 @@ export async function sendWeatherAlertEmail(
       html,
     };
 
+    logger.info(`Attempting to send email to ${userEmail} for flight ${flightId}`);
     const info = await transporter.sendMail(mailOptions);
     logger.info(`Email sent successfully to ${userEmail}`, {
       messageId: info.messageId,
       flightId,
+      response: info.response,
     });
 
     return true;
   } catch (error: any) {
-    logger.error(`Failed to send email to ${userEmail}:`, error);
-    throw error;
+    logger.error(`Failed to send email to ${userEmail}:`, {
+      error: error.message,
+      code: error.code,
+      command: error.command,
+      response: error.response,
+      stack: error.stack,
+    });
+    
+    // Provide more helpful error messages
+    let errorMessage = error.message || "Unknown error";
+    if (error.code === "EAUTH" || errorMessage.includes("BadCredentials") || errorMessage.includes("Invalid login")) {
+      errorMessage = "Gmail authentication failed. Please check your Gmail App Password. " +
+        "Make sure you're using a 16-character App Password (not your regular Gmail password). " +
+        "Generate one at: https://myaccount.google.com/apppasswords";
+    } else if (error.code === "ECONNECTION" || errorMessage.includes("Connection")) {
+      errorMessage = "Failed to connect to Gmail SMTP server. Please check your internet connection and try again.";
+    }
+    
+    throw new Error(errorMessage);
   }
 }
 
