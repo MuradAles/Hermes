@@ -82,6 +82,13 @@ export const AnimatedFlight: React.FC<AnimatedFlightProps> = React.memo(({ fligh
     const waypoints = flight.path.waypoints;
     const numWaypoints = waypoints.length;
     
+    // Validate estimatedDuration to prevent NaN/Infinity issues
+    const estimatedDuration = flight.path.estimatedDuration;
+    if (!estimatedDuration || !isFinite(estimatedDuration) || estimatedDuration <= 0) {
+      console.warn('[AnimatedFlight] Invalid estimatedDuration:', estimatedDuration);
+      return prop; // Return empty property if invalid
+    }
+    
     // Handle edge cases: no waypoints or only one waypoint
     if (numWaypoints === 0) {
       return prop; // Return empty property
@@ -89,6 +96,11 @@ export const AnimatedFlight: React.FC<AnimatedFlightProps> = React.memo(({ fligh
     if (numWaypoints === 1) {
       // Single waypoint: just add one sample at that location
       const waypoint = waypoints[0];
+      // Validate waypoint coordinates
+      if (!isFinite(waypoint.lat) || !isFinite(waypoint.lon)) {
+        console.warn('[AnimatedFlight] Invalid waypoint coordinates:', waypoint);
+        return prop;
+      }
       const altitudeMeters = (cruiseAltitude + 300) * 0.3048; // Convert feet to meters
       const time = JulianDate.fromDate(new Date());
       const position = Cartesian3.fromDegrees(waypoint.lon, waypoint.lat, altitudeMeters);
@@ -105,6 +117,13 @@ export const AnimatedFlight: React.FC<AnimatedFlightProps> = React.memo(({ fligh
       const currentWaypoint = waypoints[i];
       const nextWaypoint = waypoints[i + 1];
       
+      // Validate waypoint coordinates
+      if (!isFinite(currentWaypoint.lat) || !isFinite(currentWaypoint.lon) ||
+          !isFinite(nextWaypoint.lat) || !isFinite(nextWaypoint.lon)) {
+        console.warn('[AnimatedFlight] Invalid waypoint coordinates:', { currentWaypoint, nextWaypoint });
+        continue; // Skip invalid waypoints
+      }
+      
       // Create samples between current and next waypoint
       for (let j = 0; j <= samplesPerSegment; j++) {
         const segmentProgress = j / samplesPerSegment;
@@ -112,6 +131,12 @@ export const AnimatedFlight: React.FC<AnimatedFlightProps> = React.memo(({ fligh
         // Interpolate position between waypoints
         const lon = currentWaypoint.lon + (nextWaypoint.lon - currentWaypoint.lon) * segmentProgress;
         const lat = currentWaypoint.lat + (nextWaypoint.lat - currentWaypoint.lat) * segmentProgress;
+        
+        // Validate interpolated coordinates
+        if (!isFinite(lon) || !isFinite(lat)) {
+          console.warn('[AnimatedFlight] Invalid interpolated coordinates:', { lon, lat });
+          continue; // Skip invalid samples
+        }
         
         // Calculate overall progress through the flight (0 = start, 1 = end)
         // Use Math.max to prevent division by zero
@@ -122,10 +147,23 @@ export const AnimatedFlight: React.FC<AnimatedFlightProps> = React.memo(({ fligh
         const altitudeOffsetFeet = 300; // Fly 150 feet above the path line
         const altitudeMeters = (altitude + altitudeOffsetFeet) * 0.3048; // Convert feet to meters
         
+        // Validate altitude
+        if (!isFinite(altitudeMeters)) {
+          console.warn('[AnimatedFlight] Invalid altitude:', altitudeMeters);
+          continue; // Skip invalid samples
+        }
+        
         // Time for this sample - use the actual estimatedDuration from flight path (120 knots)
         // estimatedDuration is in minutes, convert to seconds and apply progress
-        const totalDurationSeconds = flight.path.estimatedDuration * 60; // Convert minutes to seconds
+        const totalDurationSeconds = estimatedDuration * 60; // Convert minutes to seconds
         const timeSeconds = overallProgress * totalDurationSeconds;
+        
+        // Validate time calculation
+        if (!isFinite(timeSeconds) || timeSeconds < 0) {
+          console.warn('[AnimatedFlight] Invalid timeSeconds:', timeSeconds);
+          continue; // Skip invalid samples
+        }
+        
         const time = JulianDate.addSeconds(
           JulianDate.fromDate(new Date()), 
           timeSeconds, 
@@ -144,9 +182,23 @@ export const AnimatedFlight: React.FC<AnimatedFlightProps> = React.memo(({ fligh
   useEffect(() => {
     if (!viewer || clockInitializedRef.current) return;
     
+    // Validate estimatedDuration to prevent NaN/Infinity issues
+    const estimatedDuration = flight.path.estimatedDuration;
+    if (!estimatedDuration || !isFinite(estimatedDuration) || estimatedDuration <= 0) {
+      console.warn('[AnimatedFlight] Invalid estimatedDuration for clock initialization:', estimatedDuration);
+      return; // Don't initialize clock with invalid duration
+    }
+    
     // Use the actual estimatedDuration from flight path (matches schedule display)
     // estimatedDuration is in minutes, convert to seconds
-    const totalDurationSeconds = flight.path.estimatedDuration * 60;
+    const totalDurationSeconds = estimatedDuration * 60;
+    
+    // Validate totalDurationSeconds
+    if (!isFinite(totalDurationSeconds) || totalDurationSeconds <= 0) {
+      console.warn('[AnimatedFlight] Invalid totalDurationSeconds:', totalDurationSeconds);
+      return;
+    }
+    
     const startTime = JulianDate.fromDate(new Date());
     const stopTime = JulianDate.addSeconds(startTime, totalDurationSeconds, new JulianDate());
     
@@ -184,6 +236,12 @@ export const AnimatedFlight: React.FC<AnimatedFlightProps> = React.memo(({ fligh
     const waypoints = flight.path.waypoints;
     const numWaypoints = waypoints.length;
     
+    // Validate estimatedDuration to prevent NaN/Infinity issues
+    const estimatedDuration = flight.path.estimatedDuration;
+    if (!estimatedDuration || !isFinite(estimatedDuration) || estimatedDuration <= 0) {
+      return prop; // Return empty property if invalid
+    }
+    
     // Handle edge cases: no waypoints or only one waypoint
     if (numWaypoints === 0) {
       return prop; // Return empty property
@@ -191,6 +249,10 @@ export const AnimatedFlight: React.FC<AnimatedFlightProps> = React.memo(({ fligh
     if (numWaypoints === 1) {
       // Single waypoint: just add one sample at that location
       const waypoint = waypoints[0];
+      // Validate waypoint coordinates
+      if (!isFinite(waypoint.lat) || !isFinite(waypoint.lon)) {
+        return prop;
+      }
       const altitudeMeters = (cruiseAltitude - 25) * 0.3048; // Convert feet to meters
       const time = JulianDate.fromDate(new Date());
       const position = Cartesian3.fromDegrees(waypoint.lon, waypoint.lat, altitudeMeters);
@@ -204,10 +266,22 @@ export const AnimatedFlight: React.FC<AnimatedFlightProps> = React.memo(({ fligh
       const currentWaypoint = waypoints[i];
       const nextWaypoint = waypoints[i + 1];
       
+      // Validate waypoint coordinates
+      if (!isFinite(currentWaypoint.lat) || !isFinite(currentWaypoint.lon) ||
+          !isFinite(nextWaypoint.lat) || !isFinite(nextWaypoint.lon)) {
+        continue; // Skip invalid waypoints
+      }
+      
       for (let j = 0; j <= samplesPerSegment; j++) {
         const segmentProgress = j / samplesPerSegment;
         const lon = currentWaypoint.lon + (nextWaypoint.lon - currentWaypoint.lon) * segmentProgress;
         const lat = currentWaypoint.lat + (nextWaypoint.lat - currentWaypoint.lat) * segmentProgress;
+        
+        // Validate interpolated coordinates
+        if (!isFinite(lon) || !isFinite(lat)) {
+          continue; // Skip invalid samples
+        }
+        
         // Use Math.max to prevent division by zero
         const overallProgress = (i + segmentProgress) / Math.max(1, numWaypoints - 1);
         
@@ -216,9 +290,20 @@ export const AnimatedFlight: React.FC<AnimatedFlightProps> = React.memo(({ fligh
         const additionalOffsetFeet = 25; // Additional 200 feet below the path line
         const altitudeMeters = (altitude - additionalOffsetFeet) * 0.3048; // Convert feet to meters, subtract offset
         
+        // Validate altitude
+        if (!isFinite(altitudeMeters)) {
+          continue; // Skip invalid samples
+        }
+        
         // Use the actual estimatedDuration from flight path (matches schedule display)
-        const totalDurationSeconds = flight.path.estimatedDuration * 60; // Convert minutes to seconds
+        const totalDurationSeconds = estimatedDuration * 60; // Convert minutes to seconds
         const timeSeconds = overallProgress * totalDurationSeconds;
+        
+        // Validate time calculation
+        if (!isFinite(timeSeconds) || timeSeconds < 0) {
+          continue; // Skip invalid samples
+        }
+        
         const time = JulianDate.addSeconds(
           JulianDate.fromDate(new Date()), 
           timeSeconds, 
