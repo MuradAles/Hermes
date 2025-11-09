@@ -29,6 +29,39 @@ interface CesiumMapProps {
   allFlights?: Flight[]; // For admin mode - show all flights
 }
 
+// Helper function to validate Cartesian3 position
+const isValidCartesian3 = (pos: Cartesian3 | null | undefined): boolean => {
+  if (!pos) return false;
+  return isFinite(pos.x) && isFinite(pos.y) && isFinite(pos.z) &&
+         pos.x !== Infinity && pos.y !== Infinity && pos.z !== Infinity &&
+         pos.x !== -Infinity && pos.y !== -Infinity && pos.z !== -Infinity &&
+         !isNaN(pos.x) && !isNaN(pos.y) && !isNaN(pos.z);
+};
+
+// Helper function to safely set camera position (prevents NaN)
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const safeSetCameraPosition = (viewer: any, newPosition: Cartesian3): boolean => {
+  if (!isValidCartesian3(newPosition)) {
+    console.warn('[CesiumMap] Invalid new camera position:', newPosition);
+    return false;
+  }
+  
+  // Also validate current camera position before setting new one
+  const currentPos = viewer.camera.position;
+  if (!isValidCartesian3(currentPos)) {
+    console.warn('[CesiumMap] Current camera position is invalid, resetting...');
+    // Reset to a safe default position if current is invalid
+    const safePosition = Cartesian3.fromDegrees(0, 0, 10000000); // Default: center of Earth, 10k km up
+    if (isValidCartesian3(safePosition)) {
+      viewer.camera.position = safePosition;
+    }
+    return false;
+  }
+  
+  viewer.camera.position = newPosition;
+  return true;
+};
+
 export const CesiumMap: React.FC<CesiumMapProps> = ({ selectedFlightId, allFlights }) => {
   const { user } = useAuth();
   const { flights } = useFlights(user?.uid || '');
@@ -636,8 +669,20 @@ export const CesiumMap: React.FC<CesiumMapProps> = ({ selectedFlightId, allFligh
     // Make sure camera is in free mode (not locked to any transform)
     viewer.camera.lookAtTransform(Matrix4.IDENTITY);
     
+    // Validate current camera position before starting
+    if (!isValidCartesian3(viewer.camera.position)) {
+      console.warn('[CesiumMap] Camera position is invalid at start, resetting...');
+      const safePosition = Cartesian3.fromDegrees(0, 0, 10000000);
+      if (isValidCartesian3(safePosition)) {
+        viewer.camera.position = safePosition;
+      }
+    }
+    
     const planePosition = entity.position?.getValue(viewer.clock.currentTime);
-    if (!planePosition) return;
+    if (!planePosition || !isValidCartesian3(planePosition)) {
+      console.warn('[CesiumMap] Plane position is invalid or not available yet');
+      return;
+    }
     
     let interactionTimeout: number | undefined;
     let isFollowingActive = false;
@@ -646,23 +691,40 @@ export const CesiumMap: React.FC<CesiumMapProps> = ({ selectedFlightId, allFligh
     const handleWheel = (event: WheelEvent) => {
       try {
         const currentPlanePosition = entity.position?.getValue(viewer.clock.currentTime);
-        if (!currentPlanePosition) return;
+        if (!currentPlanePosition || !isValidCartesian3(currentPlanePosition)) {
+          console.debug('[CesiumMap] Plane position invalid during zoom');
+          return;
+        }
+        
+        // Validate current camera position
+        const cameraPosition = viewer.camera.position;
+        if (!isValidCartesian3(cameraPosition)) {
+          console.warn('[CesiumMap] Camera position invalid during zoom, aborting');
+          return;
+        }
         
         // Prevent default zoom behavior
         event.preventDefault();
         event.stopPropagation();
         
         // Calculate zoom direction towards plane
-        const cameraPosition = viewer.camera.position;
         const directionToPlane = Cartesian3.subtract(
           currentPlanePosition,
           cameraPosition,
           new Cartesian3()
         );
+        
+        // Validate direction vector
+        if (!isValidCartesian3(directionToPlane)) {
+          console.debug('[CesiumMap] Invalid direction vector during zoom');
+          return;
+        }
+        
         const distanceToPlane = Cartesian3.magnitude(directionToPlane);
         
         // Safety check: ensure valid distance
-        if (!distanceToPlane || distanceToPlane === 0 || !isFinite(distanceToPlane) || distanceToPlane === Infinity) {
+        if (!isFinite(distanceToPlane) || distanceToPlane === 0 || distanceToPlane === Infinity || distanceToPlane <= 0) {
+          console.debug('[CesiumMap] Invalid distance to plane during zoom:', distanceToPlane);
           return;
         }
         
@@ -673,6 +735,7 @@ export const CesiumMap: React.FC<CesiumMapProps> = ({ selectedFlightId, allFligh
         
         // Ensure new distance is valid
         if (!isFinite(newDistance) || newDistance <= 0 || newDistance === Infinity) {
+          console.debug('[CesiumMap] Invalid new distance during zoom:', newDistance);
           return;
         }
         
@@ -680,42 +743,43 @@ export const CesiumMap: React.FC<CesiumMapProps> = ({ selectedFlightId, allFligh
         const normalizedDirection = Cartesian3.normalize(directionToPlane, new Cartesian3());
         
         // Check if normalization succeeded
-        if (!normalizedDirection) {
+        if (!normalizedDirection || !isValidCartesian3(normalizedDirection)) {
+          console.debug('[CesiumMap] Normalization failed during zoom');
           return;
         }
         
         // Calculate movement amount - ensure it's a valid number
-        const movementAmount = Number(newDistance - distanceToPlane);
+        const movementAmount = newDistance - distanceToPlane;
         
         // Check if movement amount is valid
         if (!isFinite(movementAmount) || movementAmount === Infinity || movementAmount === -Infinity) {
+          console.debug('[CesiumMap] Invalid movement amount during zoom:', movementAmount);
           return;
         }
         
         // Move camera along the direction to plane
-        // Ensure scalar is a valid number
-        const scalar = Number(movementAmount);
-        if (!isFinite(scalar)) {
-          return;
-        }
-        
         const movement = Cartesian3.multiplyByScalar(
           normalizedDirection,
-          scalar,
+          movementAmount,
           new Cartesian3()
         );
         
         // Verify movement vector is valid before applying
-        if (movement && 
-            isFinite(movement.x) && 
-            isFinite(movement.y) && 
-            isFinite(movement.z) &&
-            movement.x !== Infinity && movement.y !== Infinity && movement.z !== Infinity) {
-          viewer.camera.move(movement);
+        if (!isValidCartesian3(movement)) {
+          console.debug('[CesiumMap] Invalid movement vector during zoom');
+          return;
+        }
+        
+        // Calculate new camera position
+        const newCameraPos = Cartesian3.add(cameraPosition, movement, new Cartesian3());
+        
+        // Validate and set new camera position
+        if (!safeSetCameraPosition(viewer, newCameraPos)) {
+          console.debug('[CesiumMap] Failed to set camera position during zoom');
         }
       } catch (error) {
-        // Silently fail if there's any error during zoom
-        console.debug('Zoom error:', error);
+        // Log error for debugging but don't break the app
+        console.warn('[CesiumMap] Zoom error:', error);
       }
     };
     
@@ -749,14 +813,21 @@ export const CesiumMap: React.FC<CesiumMapProps> = ({ selectedFlightId, allFligh
       const followHandler = () => {
         if (!isFollowingActive || !followPlane || !isPlaying) return;
         
+        // Validate current camera position before doing anything
+        if (!isValidCartesian3(viewer.camera.position)) {
+          console.warn('[CesiumMap] Camera position invalid in follow handler, resetting...');
+          const safePosition = Cartesian3.fromDegrees(0, 0, 10000000);
+          if (isValidCartesian3(safePosition)) {
+            viewer.camera.position = safePosition;
+          }
+          return;
+        }
+        
         // Get plane position at current clock time (synchronized with scene render)
         const currentPlanePosition = entity.position?.getValue(viewer.clock.currentTime);
         
-        if (!currentPlanePosition) return;
-        
-        // Validate plane position (check for NaN/Infinity)
-        if (!isFinite(currentPlanePosition.x) || !isFinite(currentPlanePosition.y) || !isFinite(currentPlanePosition.z)) {
-          console.warn('[CesiumMap] Invalid plane position:', currentPlanePosition);
+        if (!currentPlanePosition || !isValidCartesian3(currentPlanePosition)) {
+          // Plane position not available yet - this is OK, just skip this frame
           return;
         }
         
@@ -766,7 +837,14 @@ export const CesiumMap: React.FC<CesiumMapProps> = ({ selectedFlightId, allFligh
           
           // Get plane's cartographic position
           const ellipsoid = viewer.scene.globe.ellipsoid;
-          const planeCartographic = ellipsoid.cartesianToCartographic(currentPlanePosition);
+          let planeCartographic: Cartographic;
+          
+          try {
+            planeCartographic = ellipsoid.cartesianToCartographic(currentPlanePosition);
+          } catch (error) {
+            console.warn('[CesiumMap] Failed to convert to cartographic:', error);
+            return;
+          }
           
           // Validate cartographic position
           if (!planeCartographic || !isFinite(planeCartographic.longitude) || 
@@ -783,46 +861,90 @@ export const CesiumMap: React.FC<CesiumMapProps> = ({ selectedFlightId, allFligh
             planeCartographic.height + cameraHeight
           );
           
-          const cameraPosition = ellipsoid.cartographicToCartesian(cameraCartographic);
+          // Validate camera height calculation
+          if (!isFinite(cameraCartographic.height)) {
+            console.warn('[CesiumMap] Invalid camera height:', cameraCartographic.height);
+            return;
+          }
+          
+          let cameraPosition: Cartesian3;
+          try {
+            cameraPosition = ellipsoid.cartographicToCartesian(cameraCartographic);
+          } catch (error) {
+            console.warn('[CesiumMap] Failed to convert cartographic to cartesian:', error);
+            return;
+          }
           
           // Validate camera position
-          if (!cameraPosition || !isFinite(cameraPosition.x) || !isFinite(cameraPosition.y) || !isFinite(cameraPosition.z)) {
-            console.warn('[CesiumMap] Invalid camera position:', cameraPosition);
+          if (!isValidCartesian3(cameraPosition)) {
+            console.warn('[CesiumMap] Invalid camera position after conversion:', cameraPosition);
             return;
           }
           
           // Calculate direction vector
           const directionVec = Cartesian3.subtract(currentPlanePosition, cameraPosition, new Cartesian3());
-          if (!isFinite(directionVec.x) || !isFinite(directionVec.y) || !isFinite(directionVec.z)) {
+          if (!isValidCartesian3(directionVec)) {
             console.warn('[CesiumMap] Invalid direction vector:', directionVec);
             return;
           }
           
+          // Normalize direction vector
+          const normalizedDirection = Cartesian3.normalize(directionVec, new Cartesian3());
+          if (!normalizedDirection || !isValidCartesian3(normalizedDirection)) {
+            console.warn('[CesiumMap] Failed to normalize direction vector');
+            return;
+          }
+          
           // Set camera to look straight down
-          viewer.camera.position = cameraPosition;
-          viewer.camera.direction = Cartesian3.normalize(directionVec, new Cartesian3());
+          if (!safeSetCameraPosition(viewer, cameraPosition)) {
+            console.warn('[CesiumMap] Failed to set initial camera position');
+            return;
+          }
+          
+          viewer.camera.direction = normalizedDirection;
           
           // Set up vector to point north
           const upVec = new Cartesian3(-Math.sin(planeCartographic.longitude), Math.cos(planeCartographic.longitude), 0);
-          if (!isFinite(upVec.x) || !isFinite(upVec.y) || !isFinite(upVec.z)) {
+          if (!isValidCartesian3(upVec)) {
             console.warn('[CesiumMap] Invalid up vector:', upVec);
             return;
           }
-          viewer.camera.up = Cartesian3.normalize(upVec, new Cartesian3());
           
-          viewer.camera.right = Cartesian3.cross(
+          const normalizedUp = Cartesian3.normalize(upVec, new Cartesian3());
+          if (!normalizedUp || !isValidCartesian3(normalizedUp)) {
+            console.warn('[CesiumMap] Failed to normalize up vector');
+            return;
+          }
+          
+          viewer.camera.up = normalizedUp;
+          
+          const rightVec = Cartesian3.cross(
             viewer.camera.direction,
             viewer.camera.up,
             new Cartesian3()
           );
           
+          if (!isValidCartesian3(rightVec)) {
+            console.warn('[CesiumMap] Invalid right vector');
+            return;
+          }
+          
+          viewer.camera.right = rightVec;
+          
           isInitialized = true;
         } else if (lastPlanePosition) {
+          // Validate last plane position
+          if (!isValidCartesian3(lastPlanePosition)) {
+            console.warn('[CesiumMap] Last plane position invalid, reinitializing...');
+            isInitialized = false;
+            return;
+          }
+          
           // Quick check: only update if plane moved significantly (performance optimization)
           const distance = Cartesian3.distance(currentPlanePosition, lastPlanePosition);
           
           // Validate distance
-          if (!isFinite(distance)) {
+          if (!isFinite(distance) || distance < 0) {
             console.warn('[CesiumMap] Invalid distance:', distance);
             return;
           }
@@ -837,27 +959,31 @@ export const CesiumMap: React.FC<CesiumMapProps> = ({ selectedFlightId, allFligh
             );
             
             // Validate plane movement
-            if (!isFinite(planeMovement.x) || !isFinite(planeMovement.y) || !isFinite(planeMovement.z)) {
+            if (!isValidCartesian3(planeMovement)) {
               console.warn('[CesiumMap] Invalid plane movement:', planeMovement);
+              return;
+            }
+            
+            // Validate current camera position before adding movement
+            const currentCameraPos = viewer.camera.position;
+            if (!isValidCartesian3(currentCameraPos)) {
+              console.warn('[CesiumMap] Current camera position invalid before update');
               return;
             }
             
             // Move camera by the same amount (follow plane's position)
             // But keep the user's camera orientation (direction, up, right)
             const newCameraPos = Cartesian3.add(
-              viewer.camera.position, 
+              currentCameraPos, 
               planeMovement, 
               new Cartesian3()
             );
             
-            // Validate new camera position
-            if (!isFinite(newCameraPos.x) || !isFinite(newCameraPos.y) || !isFinite(newCameraPos.z)) {
-              console.warn('[CesiumMap] Invalid new camera position:', newCameraPos);
+            // Validate and set new camera position
+            if (!safeSetCameraPosition(viewer, newCameraPos)) {
+              console.warn('[CesiumMap] Failed to update camera position during follow');
               return;
             }
-            
-            // Only update position, preserve user's rotation
-            viewer.camera.position = newCameraPos;
             
             // Update the last plane position
             lastPlanePosition = currentPlanePosition.clone();
