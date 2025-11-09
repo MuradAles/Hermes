@@ -200,9 +200,9 @@
 .btn-google {
   width: 100%;
   padding: 12px 24px;
-  background: #fff;
-  color: #3c4043;
-  border: 1.5px solid #dadce0;
+  background: rgba(15, 23, 42, 0.8);
+  color: #fff;
+  border: 1.5px solid rgba(96, 165, 250, 0.2);
   border-radius: 10px;
   font-size: 15px;
   font-weight: 500;
@@ -212,13 +212,13 @@
   justify-content: center;
   gap: 12px;
   transition: all 0.2s ease;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
 }
 
 .btn-google:hover {
-  background: #f8f9fa;
-  border-color: #c4c7c5;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  background: rgba(15, 23, 42, 1);
+  border-color: rgba(96, 165, 250, 0.4);
+  box-shadow: 0 4px 12px rgba(96, 165, 250, 0.2);
   transform: translateY(-1px);
 }
 
