@@ -7,6 +7,8 @@ import { FlightCard } from '../flights/FlightCard';
 import { FlightForm } from '../flights/FlightForm';
 import { WeatherAlert } from '../weather/WeatherAlert';
 import { RescheduleModal } from '../flights/RescheduleModal';
+import { NotificationPanel } from '../notifications/NotificationPanel';
+import { UserMenu } from './UserMenu';
 import { ToastContainer } from '../ui/Toast';
 import './Sidebar.css';
 
@@ -17,7 +19,6 @@ interface SidebarProps {
 }
 
 export const Sidebar: React.FC<SidebarProps> = ({ user, selectedFlightId, onSelectFlight }) => {
-  const { signOut } = useAuth();
   const { flights, loading, cancelFlight, rescheduleFlight } = useFlights(user.uid);
   const { toasts, showToast, removeToast } = useToast();
   const [showNewFlight, setShowNewFlight] = useState(false);
@@ -76,9 +77,10 @@ export const Sidebar: React.FC<SidebarProps> = ({ user, selectedFlightId, onSele
             <h3>{user.displayName}</h3>
             <span className="training-level">{user.trainingLevel.replace('-', ' ')}</span>
           </div>
-          <button onClick={signOut} className="btn-signout">
-            Sign Out
-          </button>
+          <div className="header-actions">
+            <NotificationPanel userId={user.uid} />
+            <UserMenu />
+          </div>
         </div>
         
         <button className="new-flight-btn" onClick={handleNewFlight}>

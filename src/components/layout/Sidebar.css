@@ -5,6 +5,8 @@
   flex-direction: column;
   border-right: 1px solid var(--bg-tertiary);
   overflow: hidden;
+  position: relative;
+  z-index: 1000;
 }
 
 .sidebar-header {
@@ -13,6 +15,12 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
+}
+
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
 }
 
 .user-info h3 {
@@ -33,21 +41,6 @@
   text-transform: capitalize;
 }
 
-.btn-signout {
-  padding: 8px 16px;
-  background: #1f2937;
-  color: #9ca3af;
-  border: 1px solid #374151;
-  border-radius: 6px;
-  font-size: 13px;
-  cursor: pointer;
-  transition: all 0.2s;
-}
-
-.btn-signout:hover {
-  background: #374151;
-  color: #fff;
-}
 
 .new-flight-btn {
   margin: 20px;

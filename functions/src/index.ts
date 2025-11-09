@@ -449,12 +449,29 @@ export const sendNotificationsToStudents = onCall(
             emailSentAt: admin.firestore.FieldValue.serverTimestamp(),
           });
 
+          // Create in-app notification for the user
+          try {
+            await db.collection("notifications").add({
+              userId: flight.userId,
+              type: "manual_notification",
+              title: "Weather Alert Notification",
+              message: `You've been notified about your flight ${flight.departure?.code || "Unknown"} → ${flight.arrival?.code || "Unknown"} scheduled for ${scheduledTime.toLocaleDateString()}. Please check your email for details.`,
+              flightId: flightDoc.id,
+              read: false,
+              createdAt: admin.firestore.FieldValue.serverTimestamp(),
+            });
+            logger.info(`In-app notification created for user ${flight.userId} for flight ${flightId}`);
+          } catch (notifError: any) {
+            logger.error(`Failed to create in-app notification for flight ${flightId}:`, notifError);
+            // Don't fail the whole operation if notification creation fails
+          }
+
           results.push({
             flightId,
             success: true,
           });
 
-          logger.info(`Notification sent successfully to ${userEmail} for flight ${flightId}`);
+          logger.info(`Email and notification sent successfully to ${userEmail} for flight ${flightId}`);
         } catch (error: any) {
           logger.error(`Failed to send notification for flight ${flightId}:`, error);
           

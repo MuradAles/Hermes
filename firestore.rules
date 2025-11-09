@@ -14,5 +14,17 @@ service cloud.firestore {
       allow create: if request.auth != null && request.resource.data.userId == request.auth.uid;
       allow update, delete: if request.auth != null && resource.data.userId == request.auth.uid;
     }
+    
+    // Users can read and update their own notifications
+    // Cloud Functions can create notifications for users (bypasses rules with admin SDK)
+    match /notifications/{notificationId} {
+      // Allow read/list if user is authenticated and notification belongs to them
+      // Firestore will verify that queries only return documents where userId matches
+      allow read, list: if request.auth != null && resource.data.userId == request.auth.uid;
+      // Allow create if user is creating notification for themselves (Cloud Functions bypass rules)
+      allow create: if request.auth != null && request.resource.data.userId == request.auth.uid;
+      // Allow update/delete if notification belongs to user
+      allow update, delete: if request.auth != null && resource.data.userId == request.auth.uid;
+    }
   }
 }

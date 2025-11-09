@@ -409,6 +409,23 @@ async function sendEmailNotificationIfNeeded(
       emailSentAt: admin.firestore.FieldValue.serverTimestamp(),
     });
 
+    // Create in-app notification for the user
+    try {
+      await db.collection("notifications").add({
+        userId: flight.userId,
+        type: "weather_alert",
+        title: "Weather Alert: Flight Safety Update",
+        message: `Your flight ${flight.departure.code || flight.departure.name} → ${flight.arrival.code || flight.arrival.name} scheduled for ${scheduledTime.toLocaleDateString()} has weather concerns. Safety status: ${overallSafety.status.toUpperCase()} (${Math.round(overallSafety.score)}/100). Please check your email for details.`,
+        flightId: flightDoc.id,
+        read: false,
+        createdAt: admin.firestore.FieldValue.serverTimestamp(),
+      });
+      logger.info(`In-app notification created for user ${flight.userId} for flight ${flightDoc.id}`);
+    } catch (notifError: any) {
+      logger.error(`Failed to create in-app notification for flight ${flightDoc.id}:`, notifError);
+      // Don't fail the whole operation if notification creation fails
+    }
+
     logger.info(`Email notification sent to ${userEmail} for flight ${flightDoc.id}`);
   } catch (error: any) {
     logger.error(`Failed to send email notification for flight ${flightDoc.id}:`, error);
