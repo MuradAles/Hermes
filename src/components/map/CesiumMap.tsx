@@ -1206,8 +1206,8 @@ export const CesiumMap: React.FC<CesiumMapProps> = ({ selectedFlightId, allFligh
         />
       )}
       
-      {/* Performance Display - Always visible when viewer is ready */}
-      {viewerRef.current && (
+      {/* Performance Display - Hidden */}
+      {false && viewerRef.current && (
         <PerformanceDisplay viewer={viewerRef.current.cesiumElement} />
       )}
     </>
