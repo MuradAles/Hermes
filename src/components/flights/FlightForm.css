@@ -938,6 +938,120 @@
   cursor: not-allowed;
 }
 
+/* Selected Flight Summary */
+.selected-flight-summary {
+  background: linear-gradient(135deg, rgba(99, 102, 241, 0.15) 0%, rgba(139, 92, 246, 0.1) 100%);
+  border: 1.5px solid rgba(99, 102, 241, 0.3);
+  border-radius: 16px;
+  padding: 20px;
+  margin: 24px 0;
+  box-shadow: 0 4px 16px rgba(99, 102, 241, 0.2);
+  animation: slideIn 0.3s ease;
+}
+
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.selected-flight-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid rgba(99, 102, 241, 0.2);
+}
+
+.selected-flight-header h3 {
+  margin: 0;
+  color: #fff;
+  font-size: 18px;
+  font-weight: 600;
+}
+
+.selected-flight-status {
+  padding: 6px 14px;
+  border-radius: 20px;
+  font-size: 13px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.selected-flight-status.status-safe {
+  background: rgba(16, 185, 129, 0.2);
+  color: #10b981;
+  border: 1px solid rgba(16, 185, 129, 0.4);
+}
+
+.selected-flight-status.status-marginal {
+  background: rgba(251, 191, 36, 0.2);
+  color: #fbbf24;
+  border: 1px solid rgba(251, 191, 36, 0.4);
+}
+
+.selected-flight-status.status-dangerous {
+  background: rgba(239, 68, 68, 0.2);
+  color: #ef4444;
+  border: 1px solid rgba(239, 68, 68, 0.4);
+}
+
+.selected-flight-details {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.selected-flight-route {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 20px;
+  color: #fff;
+}
+
+.selected-flight-route strong {
+  font-size: 24px;
+  font-weight: 700;
+  color: #a5b4fc;
+}
+
+.selected-flight-route .arrow {
+  color: #6366f1;
+  font-size: 20px;
+  font-weight: 600;
+}
+
+.selected-flight-time {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  color: #cbd5e1;
+  font-size: 15px;
+}
+
+.selected-flight-time .date-icon,
+.selected-flight-time .time-icon {
+  font-size: 16px;
+}
+
+.selected-flight-safety {
+  color: #cbd5e1;
+  font-size: 14px;
+}
+
+.selected-flight-safety strong {
+  color: #a5b4fc;
+  font-size: 16px;
+}
+
 /* Loading Indicator */
 .loading-indicator {
   display: flex;

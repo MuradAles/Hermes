@@ -520,8 +520,13 @@ export const FlightForm: React.FC<FlightFormProps> = ({ user, onClose, onPathPre
                               }
                             }
                             
-                            // Scroll to form top
-                            document.querySelector('.flight-form')?.scrollIntoView({ behavior: 'smooth' });
+                            // Scroll to create flight button
+                            setTimeout(() => {
+                              const createButton = document.querySelector('.btn-success');
+                              if (createButton) {
+                                createButton.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                              }
+                            }, 100);
                           }}
                           title="Click to select and check this time"
                         >
@@ -655,6 +660,45 @@ export const FlightForm: React.FC<FlightFormProps> = ({ user, onClose, onPathPre
                   </div>
                 </div>
               )}
+            </div>
+          )}
+
+          {/* Selected Flight Summary - Shows when flight is selected from AI search */}
+          {flightData && weatherChecked && (
+            <div className="selected-flight-summary">
+              <div className="selected-flight-header">
+                <h3>✈️ Selected Flight</h3>
+                <span className={`selected-flight-status status-${weatherSummary?.status || 'unknown'}`}>
+                  {weatherSummary?.status === 'safe' && '✅ Safe'}
+                  {weatherSummary?.status === 'marginal' && '⚠️ Marginal'}
+                  {weatherSummary?.status === 'dangerous' && '❌ Dangerous'}
+                </span>
+              </div>
+              <div className="selected-flight-details">
+                <div className="selected-flight-route">
+                  <strong>{formData.departureCode}</strong>
+                  <span className="arrow">→</span>
+                  <strong>{formData.arrivalCode}</strong>
+                </div>
+                <div className="selected-flight-time">
+                  <span className="date-icon">📅</span>
+                  {new Date(flightData.scheduledTime).toLocaleDateString('en-US', { 
+                    weekday: 'short', 
+                    month: 'short', 
+                    day: 'numeric' 
+                  })}
+                  <span className="time-icon">🕐</span>
+                  {new Date(flightData.scheduledTime).toLocaleTimeString('en-US', { 
+                    hour: '2-digit', 
+                    minute: '2-digit' 
+                  })}
+                </div>
+                {weatherSummary && (
+                  <div className="selected-flight-safety">
+                    Safety Score: <strong>{Math.round(weatherSummary.score)}/100</strong>
+                  </div>
+                )}
+              </div>
             </div>
           )}
 
